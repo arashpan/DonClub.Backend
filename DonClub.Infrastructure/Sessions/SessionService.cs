@@ -1,0 +1,233 @@
+﻿using Donclub.Application.Sessions;
+using Donclub.Domain.Sessions;
+using Donclub.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
+
+namespace Donclub.Infrastructure.Sessions;
+
+public class SessionService : ISessionService
+{
+    private readonly DonclubDbContext _db;
+
+    public SessionService(DonclubDbContext db)
+    {
+        _db = db;
+    }
+
+    // -------------------- Create / Update / Status --------------------
+
+    public async Task<long> CreateAsync(CreateSessionRequest request, CancellationToken ct = default)
+    {
+        // می‌تونی اینجا ولیدیشن‌هایی مثل عدم تداخل اتاق/ساعت رو اضافه کنی (بعداً)
+        var entity = new Session
+        {
+            BranchId = request.BranchId,
+            RoomId = request.RoomId,
+            GameId = request.GameId,
+            ScenarioId = request.ScenarioId,
+            ManagerId = request.ManagerId,
+            StartTimeUtc = request.StartTimeUtc,
+            EndTimeUtc = request.EndTimeUtc,
+            Status = SessionStatus.Planned,
+            Tier = (SessionTier)request.Tier,
+            MaxPlayers = request.MaxPlayers,
+            Notes = request.Notes,
+            CreatedAtUtc = DateTime.UtcNow
+        };
+
+        _db.Sessions.Add(entity);
+        await _db.SaveChangesAsync(ct);
+        return entity.Id;
+    }
+
+    public async Task UpdateAsync(long id, UpdateSessionRequest request, CancellationToken ct = default)
+    {
+        var session = await _db.Sessions.FirstOrDefaultAsync(s => s.Id == id, ct)
+            ?? throw new KeyNotFoundException("Session not found.");
+
+        // برای سشن Ended/Canceled می‌تونی اجازهٔ ویرایش ندی (بعداً)
+        session.BranchId = request.BranchId;
+        session.RoomId = request.RoomId;
+        session.GameId = request.GameId;
+        session.ScenarioId = request.ScenarioId;
+        session.ManagerId = request.ManagerId;
+        session.StartTimeUtc = request.StartTimeUtc;
+        session.EndTimeUtc = request.EndTimeUtc;
+        session.Tier = (SessionTier)request.Tier;
+        session.MaxPlayers = request.MaxPlayers;
+        session.Notes = request.Notes;
+        session.UpdatedAtUtc = DateTime.UtcNow;
+
+        await _db.SaveChangesAsync(ct);
+    }
+
+    public async Task CancelAsync(long id, CancellationToken ct = default)
+    {
+        var session = await _db.Sessions.FirstOrDefaultAsync(s => s.Id == id, ct)
+            ?? throw new KeyNotFoundException("Session not found.");
+
+        session.Status = SessionStatus.Canceled;
+        session.UpdatedAtUtc = DateTime.UtcNow;
+
+        await _db.SaveChangesAsync(ct);
+    }
+
+    public async Task ChangeStatusAsync(long id, byte status, CancellationToken ct = default)
+    {
+        var session = await _db.Sessions.FirstOrDefaultAsync(s => s.Id == id, ct)
+            ?? throw new KeyNotFoundException("Session not found.");
+
+        session.Status = (SessionStatus)status;
+        session.UpdatedAtUtc = DateTime.UtcNow;
+
+        await _db.SaveChangesAsync(ct);
+    }
+
+    // -------------------- Query --------------------
+
+    public async Task<SessionDetailDto?> GetByIdAsync(long id, CancellationToken ct = default)
+    {
+        var session = await _db.Sessions
+            .Include(s => s.Players).ThenInclude(sp => sp.Player)
+            .Include(s => s.Game)
+            .Include(s => s.Scenario)
+            .FirstOrDefaultAsync(s => s.Id == id, ct);
+
+        if (session == null) return null;
+
+        var players = await _db.SessionPlayers
+            .Where(sp => sp.SessionId == id)
+            .Select(sp => new SessionPlayerDto(
+                sp.PlayerId,
+                sp.Player.DisplayName,
+                sp.Player.PhoneNumber,
+                (byte)sp.Status,
+                _db.Scores
+                    .Where(sc => sc.SessionId == sp.SessionId && sc.PlayerId == sp.PlayerId)
+                    .Select(sc => (int?)sc.Value)
+                    .FirstOrDefault()
+            ))
+            .ToListAsync(ct);
+
+        return new SessionDetailDto(
+            session.Id,
+            session.BranchId,
+            session.RoomId,
+            session.GameId,
+            session.ScenarioId,
+            session.ManagerId,
+            session.StartTimeUtc,
+            session.EndTimeUtc,
+            (byte)session.Status,
+            (byte)session.Tier,
+            session.MaxPlayers,
+            session.Notes,
+            players
+        );
+    }
+
+    public async Task<IReadOnlyList<SessionSummaryDto>> GetByBranchAndDateAsync(int branchId, DateOnly date, CancellationToken ct = default)
+    {
+        var start = date.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
+        var end = date.AddDays(1).ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
+
+        return await _db.Sessions
+            .Where(s => s.BranchId == branchId && s.StartTimeUtc >= start && s.StartTimeUtc < end)
+            .OrderBy(s => s.StartTimeUtc)
+            .Select(s => new SessionSummaryDto(
+                s.Id,
+                s.BranchId,
+                s.RoomId,
+                s.GameId,
+                s.ScenarioId,
+                s.ManagerId,
+                s.StartTimeUtc,
+                s.EndTimeUtc,
+                (byte)s.Status,
+                (byte)s.Tier
+            ))
+            .ToListAsync(ct);
+    }
+
+    // -------------------- Players --------------------
+
+    public async Task AddPlayerAsync(long sessionId, long playerId, CancellationToken ct = default)
+    {
+        var session = await _db.Sessions.FirstOrDefaultAsync(s => s.Id == sessionId, ct)
+            ?? throw new KeyNotFoundException("Session not found.");
+
+        var playerExists = await _db.Users.AnyAsync(u => u.Id == playerId, ct);
+        if (!playerExists)
+            throw new KeyNotFoundException("Player not found.");
+
+        var exists = await _db.SessionPlayers.AnyAsync(sp => sp.SessionId == sessionId && sp.PlayerId == playerId, ct);
+        if (exists)
+            return;
+
+        var spEntity = new SessionPlayer
+        {
+            SessionId = sessionId,
+            PlayerId = playerId,
+            ReservedAtUtc = DateTime.UtcNow,
+            Status = SessionPlayerStatus.Registered
+        };
+
+        _db.SessionPlayers.Add(spEntity);
+        await _db.SaveChangesAsync(ct);
+    }
+
+    public async Task RemovePlayerAsync(long sessionId, long playerId, CancellationToken ct = default)
+    {
+        var sp = await _db.SessionPlayers
+            .FirstOrDefaultAsync(sp => sp.SessionId == sessionId && sp.PlayerId == playerId, ct);
+
+        if (sp == null) return;
+
+        _db.SessionPlayers.Remove(sp);
+
+        // اگر نخواستی ردیف Score باقی بمونه:
+        var scores = await _db.Scores
+            .Where(sc => sc.SessionId == sessionId && sc.PlayerId == playerId)
+            .ToListAsync(ct);
+        _db.Scores.RemoveRange(scores);
+
+        await _db.SaveChangesAsync(ct);
+    }
+
+    // -------------------- Scores --------------------
+
+    public async Task SetPlayerScoreAsync(long sessionId, long playerId, int score, CancellationToken ct = default)
+    {
+        var session = await _db.Sessions.FirstOrDefaultAsync(s => s.Id == sessionId, ct)
+            ?? throw new KeyNotFoundException("Session not found.");
+
+        var player = await _db.SessionPlayers
+            .FirstOrDefaultAsync(sp => sp.SessionId == sessionId && sp.PlayerId == playerId, ct)
+            ?? throw new InvalidOperationException("Player is not in this session.");
+
+        var existing = await _db.Scores
+            .FirstOrDefaultAsync(sc => sc.SessionId == sessionId && sc.PlayerId == playerId, ct);
+
+        if (existing == null)
+        {
+            existing = new Score
+            {
+                SessionId = sessionId,
+                PlayerId = playerId,
+                Value = score,
+                EnteredByManagerId = session.ManagerId ?? 0,
+                EnteredAtUtc = DateTime.UtcNow,
+                CreatedAtUtc = DateTime.UtcNow
+            };
+            _db.Scores.Add(existing);
+        }
+        else
+        {
+            existing.Value = score;
+            existing.LastEditedAtUtc = DateTime.UtcNow;
+            existing.UpdatedAtUtc = DateTime.UtcNow;
+        }
+
+        await _db.SaveChangesAsync(ct);
+    }
+}
