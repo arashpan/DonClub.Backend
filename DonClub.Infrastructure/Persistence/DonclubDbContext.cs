@@ -4,6 +4,10 @@ using Donclub.Domain.Sessions;
 using Donclub.Domain.Auth;
 using Donclub.Domain.Common;
 using Donclub.Domain.Users;
+using Donclub.Domain.Wallets;
+using Donclub.Domain.Badges;
+using Donclub.Domain.Incidents;
+
 using Microsoft.EntityFrameworkCore;
 
 namespace Donclub.Infrastructure.Persistence;
@@ -33,10 +37,127 @@ public class DonclubDbContext : DbContext
     public DbSet<Score> Scores => Set<Score>();
     public DbSet<ScoreAudit> ScoreAudits => Set<ScoreAudit>();
 
+    //Wallet
+    public DbSet<Wallet> Wallets => Set<Wallet>();
+    public DbSet<WalletTransaction> WalletTransactions => Set<WalletTransaction>();
+
+    // Badges
+    public DbSet<Badge> Badges => Set<Badge>();
+    public DbSet<PlayerBadge> PlayerBadges => Set<PlayerBadge>();
+
+    // Incidents
+    public DbSet<Incident> Incidents => Set<Incident>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
         b.HasDefaultSchema("app");
+
+        // Incidents
+        b.Entity<Incident>(e =>
+        {
+            e.HasKey(x => x.Id);
+
+            e.Property(x => x.Title)
+                .IsRequired()
+                .HasMaxLength(200);
+
+            e.Property(x => x.Description)
+                .IsRequired();
+
+            e.Property(x => x.ReviewNote)
+                .HasMaxLength(1000);
+
+            e.HasOne(x => x.Manager)
+                .WithMany()
+                .HasForeignKey(x => x.ManagerId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            e.HasOne(x => x.Session)
+                .WithMany()
+                .HasForeignKey(x => x.SessionId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            e.HasOne(x => x.CreatedByUser)
+                .WithMany()
+                .HasForeignKey(x => x.CreatedByUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            e.HasOne(x => x.ReviewedByUser)
+                .WithMany()
+                .HasForeignKey(x => x.ReviewedByUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+
+        // Badges
+        b.Entity<Badge>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Name).IsRequired().HasMaxLength(100);
+            e.Property(x => x.Code).HasMaxLength(100);
+
+            e.HasIndex(x => x.Code).IsUnique().HasFilter("[Code] IS NOT NULL");
+        });
+
+        b.Entity<PlayerBadge>(e =>
+        {
+            e.HasKey(x => x.Id);
+
+            e.Property(x => x.Reason).HasMaxLength(500);
+
+            e.HasOne(x => x.Badge)
+                .WithMany(bd => bd.PlayerBadges)
+                .HasForeignKey(x => x.BadgeId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            e.HasOne(x => x.User)
+                .WithMany()
+                .HasForeignKey(x => x.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // جلوگیری از گرفتن یک Badge چند بار (اگر نخواهیم تکراری باشد)
+            e.HasIndex(x => new { x.UserId, x.BadgeId }).IsUnique();
+        });
+
+        // Wallet
+        b.Entity<Wallet>(e =>
+        {
+            e.HasKey(x => x.Id);
+
+            e.Property(x => x.Balance)
+                .HasColumnType("decimal(18,2)")
+                .IsRequired();
+
+            e.HasIndex(x => x.UserId).IsUnique();
+
+            e.HasOne(x => x.User)
+                .WithMany()
+                .HasForeignKey(x => x.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        b.Entity<WalletTransaction>(e =>
+        {
+            e.HasKey(x => x.Id);
+
+            e.Property(x => x.Amount)
+                .HasColumnType("decimal(18,2)")
+                .IsRequired();
+
+            e.Property(x => x.BalanceAfter)
+                .HasColumnType("decimal(18,2)")
+                .IsRequired();
+
+            e.Property(x => x.Description)
+                .HasMaxLength(500);
+
+            e.HasOne(x => x.Wallet)
+                .WithMany(w => w.Transactions)
+                .HasForeignKey(x => x.WalletId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+
 
         // User
         b.Entity<User>(e =>

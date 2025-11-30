@@ -6,7 +6,7 @@ namespace Donclub.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-//[Authorize(Roles = "SuperUser,Admin")]
+[Authorize(Roles = "SuperUser,Admin")]
 public class BranchesController : ControllerBase
 {
     private readonly IBranchService _branches;

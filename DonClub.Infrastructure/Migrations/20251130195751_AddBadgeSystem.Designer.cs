@@ -4,6 +4,7 @@ using Donclub.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DonClub.Infrastructure.Migrations
 {
     [DbContext(typeof(DonclubDbContext))]
-    partial class DonclubDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251130195751_AddBadgeSystem")]
+    partial class AddBadgeSystem
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -295,67 +298,6 @@ namespace DonClub.Infrastructure.Migrations
                     b.HasIndex("GameRoleId");
 
                     b.ToTable("ScenarioRoles", "app");
-                });
-
-            modelBuilder.Entity("Donclub.Domain.Incidents.Incident", b =>
-                {
-                    b.Property<long>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
-
-                    b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<long>("CreatedByUserId")
-                        .HasColumnType("bigint");
-
-                    b.Property<string>("Description")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<long>("ManagerId")
-                        .HasColumnType("bigint");
-
-                    b.Property<string>("ReviewNote")
-                        .HasMaxLength(1000)
-                        .HasColumnType("nvarchar(1000)");
-
-                    b.Property<DateTime?>("ReviewedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<long?>("ReviewedByUserId")
-                        .HasColumnType("bigint");
-
-                    b.Property<long?>("SessionId")
-                        .HasColumnType("bigint");
-
-                    b.Property<byte>("Severity")
-                        .HasColumnType("tinyint");
-
-                    b.Property<byte>("Status")
-                        .HasColumnType("tinyint");
-
-                    b.Property<string>("Title")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
-                    b.Property<DateTime?>("UpdatedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CreatedByUserId");
-
-                    b.HasIndex("ManagerId");
-
-                    b.HasIndex("ReviewedByUserId");
-
-                    b.HasIndex("SessionId");
-
-                    b.ToTable("Incidents", "app");
                 });
 
             modelBuilder.Entity("Donclub.Domain.Sessions.Score", b =>
@@ -847,39 +789,6 @@ namespace DonClub.Infrastructure.Migrations
                     b.Navigation("GameRole");
 
                     b.Navigation("Scenario");
-                });
-
-            modelBuilder.Entity("Donclub.Domain.Incidents.Incident", b =>
-                {
-                    b.HasOne("Donclub.Domain.Users.User", "CreatedByUser")
-                        .WithMany()
-                        .HasForeignKey("CreatedByUserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("Donclub.Domain.Users.User", "Manager")
-                        .WithMany()
-                        .HasForeignKey("ManagerId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("Donclub.Domain.Users.User", "ReviewedByUser")
-                        .WithMany()
-                        .HasForeignKey("ReviewedByUserId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("Donclub.Domain.Sessions.Session", "Session")
-                        .WithMany()
-                        .HasForeignKey("SessionId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.Navigation("CreatedByUser");
-
-                    b.Navigation("Manager");
-
-                    b.Navigation("ReviewedByUser");
-
-                    b.Navigation("Session");
                 });
 
             modelBuilder.Entity("Donclub.Domain.Sessions.Score", b =>

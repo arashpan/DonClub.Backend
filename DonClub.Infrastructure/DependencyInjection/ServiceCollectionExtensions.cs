@@ -10,6 +10,14 @@ using Donclub.Application.Sessions;
 using Donclub.Infrastructure.Sessions;
 using Donclub.Application.Users;
 using Donclub.Infrastructure.Users;
+using Donclub.Application.Wallets;
+using Donclub.Infrastructure.Wallets;
+using Donclub.Application.Badges;
+using Donclub.Infrastructure.Badges;
+using Donclub.Application.Incidents;
+using Donclub.Infrastructure.Incidents;
+using Donclub.Application.Incidents;
+using Donclub.Infrastructure.Incidents;
 
 
 using Microsoft.Extensions.DependencyInjection;
@@ -27,6 +35,9 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IGameService, GameService>();
         services.AddScoped<ISessionService, SessionService>();
         services.AddScoped<IUserService, UserService>();
+        services.AddScoped<IWalletService, WalletService>();
+        services.AddScoped<IBadgeService, BadgeService>();
+        services.AddScoped<IIncidentService, IncidentService>();
 
         services.AddScoped<IBranchService, BranchService>();
 

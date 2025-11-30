@@ -29,11 +29,17 @@ public class JwtTokenGenerator : IJwtTokenGenerator
         {
             new(JwtRegisteredClaimNames.Sub, userId.ToString()),
             new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-            new(ClaimTypes.MobilePhone, phoneNumber)
+            new(ClaimTypes.MobilePhone, phoneNumber),
+            new(ClaimTypes.NameIdentifier, userId.ToString()),
+            new(ClaimTypes.Name, phoneNumber)
         };
 
+        // اضافه کردن Role ها
         foreach (var role in roles)
-            claims.Add(new Claim(ClaimTypes.Role, role));
+        {
+            if (!string.IsNullOrWhiteSpace(role))
+                claims.Add(new Claim(ClaimTypes.Role, role));
+        }
 
         var token = new JwtSecurityToken(
             issuer: jwtSection["Issuer"],

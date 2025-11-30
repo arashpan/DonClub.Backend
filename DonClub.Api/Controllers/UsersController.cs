@@ -1,11 +1,12 @@
 ﻿using Donclub.Application.Users;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Donclub.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-// [Authorize(Roles = "SuperUser,Admin")]  // بعداً فعال می‌کنیم
+[Authorize(Roles = "SuperUser,Admin")]  // بعداً فعال می‌کنیم
 public class UsersController : ControllerBase
 {
     private readonly IUserService _users;

@@ -1,11 +1,12 @@
 ﻿using Donclub.Application.Sessions;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Donclub.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-// [Authorize(Roles = "SuperUser,Admin,Manager")]  // فعلاً برای تست باز می‌ذاریم
+[Authorize(Roles = "SuperUser,Admin,Manager")]  // فعلاً برای تست باز می‌ذاریم
 public class SessionsController : ControllerBase
 {
     private readonly ISessionService _sessions;
@@ -18,6 +19,7 @@ public class SessionsController : ControllerBase
     // -------------------- Query --------------------
 
     [HttpGet("{id:long}")]
+    [AllowAnonymous]
     public async Task<ActionResult<SessionDetailDto>> GetById(long id, CancellationToken ct)
     {
         var session = await _sessions.GetByIdAsync(id, ct);
@@ -26,6 +28,7 @@ public class SessionsController : ControllerBase
 
     // /api/sessions/by-branch?branchId=1&date=2025-11-30
     [HttpGet("by-branch")]
+    [AllowAnonymous]
     public async Task<ActionResult<IReadOnlyList<SessionSummaryDto>>> GetByBranch(
         [FromQuery] int branchId,
         [FromQuery] DateOnly date,

@@ -6,7 +6,7 @@ namespace Donclub.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-//[Authorize(Roles = "Admin,SuperUser")]
+[Authorize(Roles = "Admin,SuperUser")]
 public class GamesController : ControllerBase
 {
     private readonly IGameService _games;
@@ -19,6 +19,7 @@ public class GamesController : ControllerBase
     // ------------------ Games ------------------
 
     [HttpGet]
+    [AllowAnonymous]
     public async Task<ActionResult<IReadOnlyList<GameSummaryDto>>> GetAll(CancellationToken ct)
         => Ok(await _games.GetAllAsync(ct));
 

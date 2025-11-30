@@ -98,11 +98,15 @@ public class AuthService : IAuthService
         else
         {
             user.PhoneNumberConfirmed = true;
+            await _db.SaveChangesAsync(ct);
         }
 
-        await _db.SaveChangesAsync(ct);
-
-        var roles = user.UserRoles.Select(ur => ur.Role.Name).ToArray();
+        // در این مرحله، برای اینکه مطمئن باشیم Roleها همیشه درستند (حتی در اولین لاگین):
+        var roles = await _db.UserRoles
+            .Where(ur => ur.UserId == user.Id)
+            .Include(ur => ur.Role)
+            .Select(ur => ur.Role.Name)
+            .ToArrayAsync(ct);
 
         // ساخت اکسس و رفرش توکن
         var (access, accessExp) = _jwt.GenerateAccessToken(user.Id, phoneNumber, roles);
@@ -170,6 +174,7 @@ public class AuthService : IAuthService
         phone = phone.Trim();
         if (phone.StartsWith("0")) phone = phone[1..];
         if (phone.StartsWith("+98")) phone = phone[3..];
+
         if (!phone.StartsWith("9") && phone.Length == 10 && phone[0] != '9')
             throw new InvalidOperationException("شماره موبایل نامعتبر است.");
 

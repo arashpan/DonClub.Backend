@@ -4,6 +4,7 @@ using Donclub.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DonClub.Infrastructure.Migrations
 {
     [DbContext(typeof(DonclubDbContext))]
-    partial class DonclubDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251130190325_AddWalletSystem")]
+    partial class AddWalletSystem
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -85,93 +88,6 @@ namespace DonClub.Infrastructure.Migrations
                     b.HasIndex("PhoneNumber", "Code");
 
                     b.ToTable("SmsOtps", "app");
-                });
-
-            modelBuilder.Entity("Donclub.Domain.Badges.Badge", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Code")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<string>("ConditionJson")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Description")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("IconUrl")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<DateTime?>("UpdatedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("Code")
-                        .IsUnique()
-                        .HasFilter("[Code] IS NOT NULL");
-
-                    b.ToTable("Badges", "app");
-                });
-
-            modelBuilder.Entity("Donclub.Domain.Badges.PlayerBadge", b =>
-                {
-                    b.Property<long>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
-
-                    b.Property<int>("BadgeId")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime>("EarnedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<long?>("GrantedByUserId")
-                        .HasColumnType("bigint");
-
-                    b.Property<bool>("IsRevoked")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("Reason")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<DateTime?>("UpdatedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<long>("UserId")
-                        .HasColumnType("bigint");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("BadgeId");
-
-                    b.HasIndex("UserId", "BadgeId")
-                        .IsUnique();
-
-                    b.ToTable("PlayerBadges", "app");
                 });
 
             modelBuilder.Entity("Donclub.Domain.Games.Game", b =>
@@ -295,67 +211,6 @@ namespace DonClub.Infrastructure.Migrations
                     b.HasIndex("GameRoleId");
 
                     b.ToTable("ScenarioRoles", "app");
-                });
-
-            modelBuilder.Entity("Donclub.Domain.Incidents.Incident", b =>
-                {
-                    b.Property<long>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
-
-                    b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<long>("CreatedByUserId")
-                        .HasColumnType("bigint");
-
-                    b.Property<string>("Description")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<long>("ManagerId")
-                        .HasColumnType("bigint");
-
-                    b.Property<string>("ReviewNote")
-                        .HasMaxLength(1000)
-                        .HasColumnType("nvarchar(1000)");
-
-                    b.Property<DateTime?>("ReviewedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<long?>("ReviewedByUserId")
-                        .HasColumnType("bigint");
-
-                    b.Property<long?>("SessionId")
-                        .HasColumnType("bigint");
-
-                    b.Property<byte>("Severity")
-                        .HasColumnType("tinyint");
-
-                    b.Property<byte>("Status")
-                        .HasColumnType("tinyint");
-
-                    b.Property<string>("Title")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
-                    b.Property<DateTime?>("UpdatedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CreatedByUserId");
-
-                    b.HasIndex("ManagerId");
-
-                    b.HasIndex("ReviewedByUserId");
-
-                    b.HasIndex("SessionId");
-
-                    b.ToTable("Incidents", "app");
                 });
 
             modelBuilder.Entity("Donclub.Domain.Sessions.Score", b =>
@@ -789,25 +644,6 @@ namespace DonClub.Infrastructure.Migrations
                     b.ToTable("WalletTransactions", "app");
                 });
 
-            modelBuilder.Entity("Donclub.Domain.Badges.PlayerBadge", b =>
-                {
-                    b.HasOne("Donclub.Domain.Badges.Badge", "Badge")
-                        .WithMany("PlayerBadges")
-                        .HasForeignKey("BadgeId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("Donclub.Domain.Users.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Badge");
-
-                    b.Navigation("User");
-                });
-
             modelBuilder.Entity("Donclub.Domain.Games.GameRole", b =>
                 {
                     b.HasOne("Donclub.Domain.Games.Game", "Game")
@@ -847,39 +683,6 @@ namespace DonClub.Infrastructure.Migrations
                     b.Navigation("GameRole");
 
                     b.Navigation("Scenario");
-                });
-
-            modelBuilder.Entity("Donclub.Domain.Incidents.Incident", b =>
-                {
-                    b.HasOne("Donclub.Domain.Users.User", "CreatedByUser")
-                        .WithMany()
-                        .HasForeignKey("CreatedByUserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("Donclub.Domain.Users.User", "Manager")
-                        .WithMany()
-                        .HasForeignKey("ManagerId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("Donclub.Domain.Users.User", "ReviewedByUser")
-                        .WithMany()
-                        .HasForeignKey("ReviewedByUserId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("Donclub.Domain.Sessions.Session", "Session")
-                        .WithMany()
-                        .HasForeignKey("SessionId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.Navigation("CreatedByUser");
-
-                    b.Navigation("Manager");
-
-                    b.Navigation("ReviewedByUser");
-
-                    b.Navigation("Session");
                 });
 
             modelBuilder.Entity("Donclub.Domain.Sessions.Score", b =>
@@ -1030,11 +833,6 @@ namespace DonClub.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("Wallet");
-                });
-
-            modelBuilder.Entity("Donclub.Domain.Badges.Badge", b =>
-                {
-                    b.Navigation("PlayerBadges");
                 });
 
             modelBuilder.Entity("Donclub.Domain.Games.Game", b =>
