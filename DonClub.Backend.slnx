@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="DonClub.Api/DonClub.Api.csproj" />
+  <Project Path="DonClub.Application/DonClub.Application.csproj" />
+  <Project Path="DonClub.Domain/DonClub.Domain.csproj" />
+  <Project Path="DonClub.Infrastructure/DonClub.Infrastructure.csproj" />
+</Solution>
