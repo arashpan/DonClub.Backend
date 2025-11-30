@@ -1,12 +1,15 @@
 ﻿using Donclub.Application.Wallets;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
+using Donclub.Domain.Users;
+
 
 namespace Donclub.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize(Roles = "SuperUser,Admin")]  // بعداً فعال می‌کنیم
+[Authorize(Roles = AppRoles.SuperUserOrAdmin)]
 public class WalletsController : ControllerBase
 {
     private readonly IWalletService _wallets;
@@ -60,4 +63,21 @@ public class WalletsController : ControllerBase
             return BadRequest(new { message = ex.Message });
         }
     }
+
+    // GET /api/Wallets/me
+    [HttpGet("me")]
+    [Authorize] // هر کاربر لاگین کرده
+    public async Task<ActionResult<WalletDto>> GetMyWallet(CancellationToken ct)
+    {
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userIdClaim))
+            return Unauthorized();
+
+        if (!long.TryParse(userIdClaim, out var userId))
+            return Unauthorized();
+
+        var wallet = await _wallets.GetOrCreateWalletForUserAsync(userId, ct);
+        return Ok(wallet);
+    }
+
 }

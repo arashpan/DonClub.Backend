@@ -1,6 +1,9 @@
 ﻿using Donclub.Application.Users;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
+using Donclub.Domain.Users;
+
 
 namespace Donclub.Api.Controllers;
 
@@ -64,4 +67,23 @@ public class UsersController : ControllerBase
         await _users.SetActiveAsync(id, request.IsActive, ct);
         return NoContent();
     }
+
+    // GET /api/Users/me
+    [HttpGet("me")]
+    [Authorize] // هر کاربر لاگین کرده
+    public async Task<ActionResult<UserDetailDto>> GetMe(CancellationToken ct)
+    {
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userIdClaim))
+            return Unauthorized();
+
+        if (!long.TryParse(userIdClaim, out var userId))
+            return Unauthorized();
+
+        var user = await _users.GetByIdAsync(userId, ct);
+        if (user is null) return NotFound();
+
+        return Ok(user);
+    }
+
 }

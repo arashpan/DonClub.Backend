@@ -2,6 +2,8 @@
 using Donclub.Domain.Users;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
+
 
 namespace Donclub.Api.Controllers;
 
@@ -89,4 +91,21 @@ public class BadgesController : ControllerBase
         await _badges.RevokeBadgeAsync(playerBadgeId, request.Reason, null, ct);
         return NoContent();
     }
+
+    // GET /api/badges/me  → برای خود کاربر
+    [HttpGet("me")]
+    [Authorize] // هر کاربر لاگین کرده
+    public async Task<ActionResult<IReadOnlyList<PlayerBadgeDto>>> GetMyBadges(CancellationToken ct)
+    {
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userIdClaim))
+            return Unauthorized();
+
+        if (!long.TryParse(userIdClaim, out var userId))
+            return Unauthorized();
+
+        var list = await _badges.GetBadgesForUserAsync(userId, ct);
+        return Ok(list);
+    }
+
 }
