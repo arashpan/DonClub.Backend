@@ -7,6 +7,7 @@ using Donclub.Domain.Users;
 using Donclub.Domain.Wallets;
 using Donclub.Domain.Badges;
 using Donclub.Domain.Incidents;
+using Donclub.Domain.Missions;
 
 using Microsoft.EntityFrameworkCore;
 
@@ -48,9 +49,46 @@ public class DonclubDbContext : DbContext
     // Incidents
     public DbSet<Incident> Incidents => Set<Incident>();
 
+    // Missions
+    public DbSet<MissionDefinition> MissionDefinitions => Set<MissionDefinition>();
+    public DbSet<UserMission> UserMissions => Set<UserMission>();
+
     protected override void OnModelCreating(ModelBuilder b)
     {
         b.HasDefaultSchema("app");
+
+        // Missions
+        b.Entity<MissionDefinition>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Name).IsRequired().HasMaxLength(200);
+            e.Property(x => x.Code).HasMaxLength(100);
+            e.Property(x => x.Description).HasMaxLength(1000);
+            e.Property(x => x.RewardDescription).HasMaxLength(500);
+            e.Property(x => x.RewardWalletAmount).HasColumnType("decimal(18,2)");
+
+            e.HasIndex(x => x.Code).IsUnique().HasFilter("[Code] IS NOT NULL");
+        });
+
+        b.Entity<UserMission>(e =>
+        {
+            e.HasKey(x => x.Id);
+
+            e.HasOne(x => x.MissionDefinition)
+                .WithMany(m => m.UserMissions)
+                .HasForeignKey(x => x.MissionDefinitionId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            e.HasOne(x => x.User)
+                .WithMany()
+                .HasForeignKey(x => x.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // یک مأموریت، در یک بازه‌ی زمانی، برای یک کاربر، یک بار
+            e.HasIndex(x => new { x.UserId, x.MissionDefinitionId, x.PeriodStartUtc, x.PeriodEndUtc })
+                .IsUnique();
+        });
+
 
         // Incidents
         b.Entity<Incident>(e =>

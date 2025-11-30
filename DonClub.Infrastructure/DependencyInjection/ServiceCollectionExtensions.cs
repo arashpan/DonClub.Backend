@@ -16,8 +16,8 @@ using Donclub.Application.Badges;
 using Donclub.Infrastructure.Badges;
 using Donclub.Application.Incidents;
 using Donclub.Infrastructure.Incidents;
-using Donclub.Application.Incidents;
-using Donclub.Infrastructure.Incidents;
+using Donclub.Application.Missions;
+using Donclub.Infrastructure.Missions;
 
 
 using Microsoft.Extensions.DependencyInjection;
@@ -38,6 +38,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IWalletService, WalletService>();
         services.AddScoped<IBadgeService, BadgeService>();
         services.AddScoped<IIncidentService, IncidentService>();
+        services.AddScoped<IMissionService, MissionService>();
 
         services.AddScoped<IBranchService, BranchService>();
 
