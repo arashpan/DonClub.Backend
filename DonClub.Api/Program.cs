@@ -4,6 +4,7 @@ using Donclub.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Donclub.Api.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -43,6 +44,9 @@ builder.Services
 builder.Services.AddAuthorization();
 
 var app = builder.Build();
+
+// 🔹 این باید خیلی زود در pipeline صدا زده بشه
+app.UseGlobalErrorHandling();
 
 if (app.Environment.IsDevelopment())
 {
