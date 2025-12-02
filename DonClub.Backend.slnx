@@ -1,4 +1,7 @@
 <Solution>
+  <Folder Name="/tests/">
+    <Project Path="tests/Donclub.Api.Tests/Donclub.Api.Tests.csproj" />
+  </Folder>
   <Project Path="DonClub.Api/DonClub.Api.csproj" />
   <Project Path="DonClub.Application/DonClub.Application.csproj" />
   <Project Path="DonClub.Domain/DonClub.Domain.csproj" />
