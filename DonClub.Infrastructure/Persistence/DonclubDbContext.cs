@@ -1,16 +1,15 @@
-﻿using Donclub.Domain.Stadium;
-using Donclub.Domain.Games;
-using Donclub.Domain.Sessions;
-using Donclub.Domain.Auth;
-using Donclub.Domain.Common;
-using Donclub.Domain.Users;
-using Donclub.Domain.Wallets;
+﻿using Donclub.Domain.Auth;
 using Donclub.Domain.Badges;
+using Donclub.Domain.Common;
+using Donclub.Domain.Games;
 using Donclub.Domain.Incidents;
 using Donclub.Domain.Missions;
+using Donclub.Domain.Notifications;
+using Donclub.Domain.Sessions;
 using Donclub.Domain.Settings;
-
-
+using Donclub.Domain.Stadium;
+using Donclub.Domain.Users;
+using Donclub.Domain.Wallets;
 using Microsoft.EntityFrameworkCore;
 
 namespace Donclub.Infrastructure.Persistence;
@@ -19,6 +18,8 @@ public class DonclubDbContext : DbContext
 {
     public DonclubDbContext(DbContextOptions<DonclubDbContext> options) : base(options) { }
     public DbSet<SystemSetting> SystemSettings => Set<SystemSetting>();
+    public DbSet<Notification> Notifications => Set<Notification>();
+
     public DbSet<User> Users => Set<User>();
     public DbSet<Role> Roles => Set<Role>();
     public DbSet<UserRole> UserRoles => Set<UserRole>();
@@ -58,6 +59,38 @@ public class DonclubDbContext : DbContext
     protected override void OnModelCreating(ModelBuilder b)
     {
         b.HasDefaultSchema("app");
+        
+        b.Entity<Notification>(e =>
+        {
+            e.ToTable("Notifications", "app");
+
+            e.HasKey(x => x.Id);
+
+            e.Property(x => x.Title)
+                .HasMaxLength(200)
+                .IsRequired();
+
+            e.Property(x => x.Message)
+                .HasMaxLength(1000)
+                .IsRequired();
+
+            e.Property(x => x.Type)
+                .IsRequired();
+
+            e.Property(x => x.DataJson)
+                .HasColumnType("nvarchar(max)");
+
+            e.Property(x => x.IsRead)
+                .IsRequired();
+
+            e.Property(x => x.CreatedAtUtc)
+                .IsRequired();
+
+            e.HasOne(x => x.User)
+                .WithMany()
+                .HasForeignKey(x => x.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
 
         // Missions
         b.Entity<MissionDefinition>(e =>

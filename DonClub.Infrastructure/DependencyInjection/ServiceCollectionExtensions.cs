@@ -26,6 +26,8 @@ using Donclub.Application.Rewards;
 using Donclub.Infrastructure.Rewards;
 using Donclub.Application.Profile;
 using Donclub.Infrastructure.Profile;
+using Donclub.Application.Notifications;
+using Donclub.Infrastructure.Notifications;
 
 
 using Microsoft.Extensions.DependencyInjection;
@@ -50,7 +52,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IOtpSettingsService, OtpSettingsService>();
         services.AddScoped<IAchievementService, AchievementService>();
         services.AddScoped<IRewardService, RewardService>();
-
+        services.AddScoped<INotificationService, NotificationService>();
         services.AddScoped<IBranchService, BranchService>();
         services.AddScoped<IProfileService, ProfileService>();
 

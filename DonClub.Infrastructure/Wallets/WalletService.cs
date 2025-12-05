@@ -2,16 +2,20 @@
 using Donclub.Domain.Wallets;
 using Donclub.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
+using Donclub.Application.Notifications;
+using Donclub.Domain.Notifications;
 
 namespace Donclub.Infrastructure.Wallets;
 
 public class WalletService : IWalletService
 {
     private readonly DonclubDbContext _db;
+    private readonly INotificationService _notifications;
 
-    public WalletService(DonclubDbContext db)
+    public WalletService(DonclubDbContext db, INotificationService notifications)
     {
         _db = db;
+        _notifications = notifications;
     }
 
     public async Task<WalletDto> GetOrCreateWalletForUserAsync(long userId, CancellationToken ct = default)
@@ -107,6 +111,20 @@ public class WalletService : IWalletService
 
         _db.WalletTransactions.Add(tx);
         await _db.SaveChangesAsync(ct);
+        // اگر نوع تراکنش Reward نباشد، نوتیفیکیشن عمومی کیف پول می‌فرستیم
+        if ((WalletTransactionType)request.Type != WalletTransactionType.Reward)
+        {
+            var title = "شارژ کیف پول";
+            var msg = $"کیف پول شما به مبلغ {request.Amount} شارژ شد. موجودی فعلی: {wallet.Balance}";
+
+            await _notifications.CreateAsync(new CreateNotificationRequest(
+                UserId: userId,
+                Title: title,
+                Message: msg,
+                Type: (byte)NotificationType.WalletCredited,
+                DataJson: null // در صورت نیاز بعداً می‌تونیم missionId/sessionId و ... را JSON کنیم
+            ), ct);
+        }
 
         return MapWallet(wallet);
     }
@@ -144,6 +162,19 @@ public class WalletService : IWalletService
 
         _db.WalletTransactions.Add(tx);
         await _db.SaveChangesAsync(ct);
+        if ((WalletTransactionType)request.Type != WalletTransactionType.Reward)
+        {
+            var title = "برداشت از کیف پول";
+            var msg = $"به مبلغ {request.Amount} از کیف پول شما برداشت شد. موجودی فعلی: {wallet.Balance}";
+
+            await _notifications.CreateAsync(new CreateNotificationRequest(
+                UserId: userId,
+                Title: title,
+                Message: msg,
+                Type: (byte)NotificationType.WalletCredited, // یا نوع جداگانه اگر تعریف کنی
+                DataJson: null
+            ), ct);
+        }
 
         return MapWallet(wallet);
     }

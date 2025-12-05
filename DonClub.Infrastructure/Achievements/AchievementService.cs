@@ -7,6 +7,9 @@ using Donclub.Domain.Sessions;
 using Donclub.Domain.Wallets;
 using Donclub.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
+using Donclub.Application.Notifications;
+using Donclub.Domain.Notifications;
+
 
 namespace Donclub.Infrastructure.Achievements;
 
@@ -36,11 +39,13 @@ public class AchievementService : IAchievementService
 {
     private readonly DonclubDbContext _db;
     private readonly IRewardService _rewards;
+    private readonly INotificationService _notifications;
 
-    public AchievementService(DonclubDbContext db, IRewardService rewards)
+    public AchievementService(DonclubDbContext db, IRewardService rewards, INotificationService notifications)
     {
         _db = db;
         _rewards = rewards;
+        _notifications = notifications;
     }
 
     public async Task ProcessSessionCompletedAsync(long sessionId, CancellationToken ct = default)
@@ -369,6 +374,13 @@ public class AchievementService : IAchievementService
                     );
 
                     await _rewards.CreditRewardAsync(reward, ct);
+                    await _notifications.CreateAsync(new CreateNotificationRequest(
+                        UserId: userId,
+                        Title: "ماموریت تکمیل شد",
+                        Message: $"ماموریت «{um.MissionDefinition.Name}» با موفقیت تکمیل شد و {amount} به کیف پول شما اضافه شد.",
+                        Type: (byte)NotificationType.MissionCompleted,
+                        DataJson: null // یا اگر خواستی: JsonSerializer.Serialize(new { missionId = um.MissionDefinition.Id, reward = amount })
+                    ), ct);
                 }
             }
         }
@@ -457,6 +469,13 @@ public class AchievementService : IAchievementService
                     );
 
                     await _rewards.CreditRewardAsync(reward, ct);
+                    await _notifications.CreateAsync(new CreateNotificationRequest(
+                        UserId: userId,
+                        Title: "بَج جدید دریافت شد",
+                        Message: $"بج «{badge.Name}» به شما تعلق گرفت و {badge.RewardWalletAmount.Value} به کیف پول شما اضافه شد.",
+                        Type: (byte)NotificationType.BadgeGranted,
+                        DataJson: null // یا JsonSerializer.Serialize(new { badgeId = badge.Id, reward = badge.RewardWalletAmount.Value })
+                    ), ct);
                 }
             }
         }
