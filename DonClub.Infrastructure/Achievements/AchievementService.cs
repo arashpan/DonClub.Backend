@@ -1,4 +1,5 @@
-﻿using Donclub.Application.Achievements;
+﻿using System.Text.Json;
+using Donclub.Application.Achievements;
 using Donclub.Application.Rewards;
 using Donclub.Domain.Badges;
 using Donclub.Domain.Missions;
@@ -6,87 +7,28 @@ using Donclub.Domain.Sessions;
 using Donclub.Domain.Wallets;
 using Donclub.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
-using System.Text.Json;
-using Donclub.Application.Rewards;
 
 namespace Donclub.Infrastructure.Achievements;
 
-// شرط‌هایی که در ConditionJson ذخیره می‌کنیم
+// این کلاس معادل ConditionJson است که روی MissionDefinition و Badge ذخیره می‌کنیم
 public class SessionEventCondition
 {
-    /// <summary>
-    /// "Player" یا "Manager"
-    /// </summary>
-    public string AppliesTo { get; set; } = "Player";
+    public string AppliesTo { get; set; } = "Player";        // "Player" یا "Manager"
+    public string Event { get; set; } = "SessionCompleted";  // فعلاً فقط همین
 
-    /// <summary>
-    /// نوع رویداد. فعلاً فقط "SessionCompleted" استفاده می‌شود.
-    /// </summary>
-    public string Event { get; set; } = "SessionCompleted";
-
-    /// <summary>
-    /// حداقل تعداد کل سشن‌ها (برای این کاربر، بر اساس نوع AppliesTo)
-    /// </summary>
     public int? MinTotalSessions { get; set; }
-
-    /// <summary>
-    /// حداقل تعداد سشن‌های VIP
-    /// </summary>
     public int? MinVipSessions { get; set; }
-
-    /// <summary>
-    /// حداقل تعداد سشن‌های CIP
-    /// </summary>
     public int? MinCipSessions { get; set; }
-
-    /// <summary>
-    /// حداقل تعداد سشن‌ها در همین Game فعلی
-    /// </summary>
     public int? MinGameSessions { get; set; }
-
-    /// <summary>
-    /// حداقل تعداد سشن‌ها در همین Scenario فعلی
-    /// </summary>
     public int? MinScenarioSessions { get; set; }
-
-    /// <summary>
-    /// حداقل تعداد سشن‌ها در همین Branch فعلی
-    /// </summary>
     public int? MinBranchSessions { get; set; }
-
-    /// <summary>
-    /// حداقل تعداد سشن‌ها در همین Room فعلی
-    /// </summary>
     public int? MinRoomSessions { get; set; }
 
-    /// <summary>
-    /// اگر true باشد، فقط وقتی این رویداد معتبر است که همین سشن VIP باشد.
-    /// </summary>
     public bool? RequireCurrentSessionVip { get; set; }
-
-    /// <summary>
-    /// اگر true باشد، فقط وقتی این رویداد معتبر است که همین سشن CIP باشد.
-    /// </summary>
     public bool? RequireCurrentSessionCip { get; set; }
-
-    /// <summary>
-    /// اگر true باشد، فقط وقتی معتبر است که همین سشن مربوط به همین Game باشد (برای MinGameSessions).
-    /// </summary>
     public bool? RequireCurrentGame { get; set; }
-
-    /// <summary>
-    /// اگر true باشد، فقط وقتی معتبر است که همین سشن مربوط به همین Scenario باشد.
-    /// </summary>
     public bool? RequireCurrentScenario { get; set; }
-
-    /// <summary>
-    /// فقط وقتی معتبر است که سشن در همین Branch فعلی باشد.
-    /// </summary>
     public bool? RequireCurrentBranch { get; set; }
-
-    /// <summary>
-    /// فقط وقتی معتبر است که سشن در همین Room فعلی باشد.
-    /// </summary>
     public bool? RequireCurrentRoom { get; set; }
 }
 
@@ -119,7 +61,7 @@ public class AchievementService : IAchievementService
             await ProcessManagerAchievementsAsync(session, ct);
         }
 
-        // Players (فقط بر اساس SessionPlayers موجود)
+        // Players
         var players = await _db.SessionPlayers
             .Where(sp => sp.SessionId == sessionId)
             .ToListAsync(ct);
@@ -130,11 +72,8 @@ public class AchievementService : IAchievementService
         }
     }
 
-    // ---------------- Helpers: Metrics ----------------
+    // ---------- Metrics ----------
 
-    /// <summary>
-    /// متریک‌های قابل استفاده برای Rule Engine برای یک کاربر در context یک سشن مشخص.
-    /// </summary>
     private sealed class SessionAchievementMetrics
     {
         public int TotalSessions { get; init; }
@@ -152,7 +91,6 @@ public class AchievementService : IAchievementService
         Session currentSession,
         CancellationToken ct)
     {
-        // برای Manager مستقیم روی Sessions می‌رویم
         if (string.Equals(appliesTo, "Manager", StringComparison.OrdinalIgnoreCase))
         {
             var sessionsQuery = _db.Sessions
@@ -196,7 +134,7 @@ public class AchievementService : IAchievementService
             };
         }
 
-        // برای Player بر اساس SessionPlayers و join به Sessions
+        // Player
         var spQuery = _db.SessionPlayers
             .Where(sp => sp.PlayerId == userId)
             .Join(
@@ -249,14 +187,12 @@ public class AchievementService : IAchievementService
         Session currentSession,
         string appliesTo)
     {
-        // AppliesTo و Event
         if (!string.Equals(cond.AppliesTo ?? "Player", appliesTo, StringComparison.OrdinalIgnoreCase))
             return false;
 
         if (!string.Equals(cond.Event ?? "SessionCompleted", "SessionCompleted", StringComparison.OrdinalIgnoreCase))
             return false;
 
-        // متریک‌ها
         if (cond.MinTotalSessions.HasValue && metrics.TotalSessions < cond.MinTotalSessions.Value)
             return false;
 
@@ -278,7 +214,6 @@ public class AchievementService : IAchievementService
         if (cond.MinRoomSessions.HasValue && metrics.RoomSessions < cond.MinRoomSessions.Value)
             return false;
 
-        // محدودیت‌های مربوط به سشن فعلی
         if (cond.RequireCurrentSessionVip == true && currentSession.Tier != SessionTier.Vip)
             return false;
 
@@ -308,14 +243,13 @@ public class AchievementService : IAchievementService
         return true;
     }
 
-    // ---------------- Manager ----------------
+    // ---------- Manager ----------
 
     private async Task ProcessManagerAchievementsAsync(Session session, CancellationToken ct)
     {
         var managerId = session.ManagerId!.Value;
         var now = DateTime.UtcNow;
 
-        // متریک‌ها برای این Manager در context همین سشن
         var metrics = await BuildMetricsForUserAsync(
             userId: managerId,
             appliesTo: "Manager",
@@ -339,7 +273,7 @@ public class AchievementService : IAchievementService
             ct: ct);
     }
 
-    // ---------------- Players ----------------
+    // ---------- Players ----------
 
     private async Task ProcessPlayersAchievementsAsync(
         Session session,
@@ -376,7 +310,7 @@ public class AchievementService : IAchievementService
         }
     }
 
-    // ---------------- Missions (Manager + Player) ----------------
+    // ---------- Missions ----------
 
     private async Task UpdateUserMissionsForEventAsync(
         long userId,
@@ -409,7 +343,6 @@ public class AchievementService : IAchievementService
                     continue;
             }
 
-            // اگر ConditionJson نداشت یا شرط Match شد:
             um.CurrentValue += 1;
             um.LastProgressAtUtc = now;
             um.UpdatedAtUtc = now;
@@ -419,13 +352,17 @@ public class AchievementService : IAchievementService
                 um.IsCompleted = true;
                 um.CompletedAtUtc = now;
 
+                // Reward Wallet (در صورت تعریف در MissionDefinition)
                 if (um.MissionDefinition.RewardWalletAmount.HasValue &&
                     um.MissionDefinition.RewardWalletAmount.Value > 0)
                 {
+                    var amount = um.MissionDefinition.RewardWalletAmount.Value;
+
+                    var description = $"Mission '{um.MissionDefinition.Name}' completed.";
                     var reward = new RewardWalletRequest(
                         UserId: userId,
-                        Amount: um.MissionDefinition.RewardWalletAmount.Value,
-                        Description: $"Mission '{um.MissionDefinition.Name}' completed.",
+                        Amount: amount,
+                        Description: description,
                         Type: (byte)WalletTransactionType.Reward,
                         RelatedMissionId: um.MissionDefinition.Id,
                         RelatedBadgeId: null
@@ -434,13 +371,12 @@ public class AchievementService : IAchievementService
                     await _rewards.CreditRewardAsync(reward, ct);
                 }
             }
-
         }
 
         await _db.SaveChangesAsync(ct);
     }
 
-    // ---------------- Badges (Manager + Player) ----------------
+    // ---------- Badges ----------
 
     private async Task CheckAndGrantBadgesForEventAsync(
         long userId,
@@ -500,29 +436,33 @@ public class AchievementService : IAchievementService
             _db.PlayerBadges.AddRange(toAdd);
             await _db.SaveChangesAsync(ct);
 
-            // 🎁 پاداش کیف پول برای هر Badge جدید (در صورت وجود RewardWalletAmount)
+            // 📌 اصلاح مهم: پرداخت Reward بر اساس Badge اصلی (نه pb.Badge که null است)
+            var badgeById = candidates.ToDictionary(b => b.Id);
+
             foreach (var pb in toAdd)
             {
-                if (pb.Badge.RewardWalletAmount.HasValue &&
-                    pb.Badge.RewardWalletAmount.Value > 0)
+                if (!badgeById.TryGetValue(pb.BadgeId, out var badge))
+                    continue;
+
+                if (badge.RewardWalletAmount.HasValue &&
+                    badge.RewardWalletAmount.Value > 0)
                 {
                     var reward = new RewardWalletRequest(
                         UserId: userId,
-                        Amount: pb.Badge.RewardWalletAmount.Value,
-                        Description: $"Badge '{pb.Badge.Name}' granted.",
+                        Amount: badge.RewardWalletAmount.Value,
+                        Description: $"Badge '{badge.Name}' granted.",
                         Type: (byte)WalletTransactionType.Reward,
                         RelatedMissionId: null,
-                        RelatedBadgeId: pb.BadgeId
+                        RelatedBadgeId: badge.Id
                     );
 
                     await _rewards.CreditRewardAsync(reward, ct);
                 }
             }
-
         }
     }
 
-    // ---------------- Helpers ----------------
+    // ---------- Helpers ----------
 
     private static SessionEventCondition? ParseCondition(string? json)
     {
@@ -535,7 +475,6 @@ public class AchievementService : IAchievementService
         }
         catch
         {
-            // اگر JSON خراب باشد، شرط را نادیده می‌گیریم
             return null;
         }
     }
