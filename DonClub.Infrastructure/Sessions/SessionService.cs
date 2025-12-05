@@ -3,17 +3,23 @@ using Donclub.Application.Achievements;
 using Donclub.Domain.Sessions;
 using Donclub.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
+using Donclub.Application.Notifications;
+using Donclub.Domain.Notifications;
+using System.Text.Json;
+
 
 namespace Donclub.Infrastructure.Sessions;
 
 public class SessionService : ISessionService
 {
     private readonly DonclubDbContext _db;
+    private readonly INotificationService _notifications;
     private readonly IAchievementService _achievements;
 
-    public SessionService(DonclubDbContext db, IAchievementService achievements)
+    public SessionService(DonclubDbContext db, IAchievementService achievements, INotificationService notifications)
     {
         _db = db;
+        _notifications = notifications;
         _achievements = achievements;
     }
 
@@ -62,18 +68,124 @@ public class SessionService : ISessionService
         session.UpdatedAtUtc = DateTime.UtcNow;
 
         await _db.SaveChangesAsync(ct);
+        // بعد از SaveChangesAsync
+
+        session = await _db.Sessions
+            .Include(s => s.Players)
+            .FirstOrDefaultAsync(s => s.Id == id, ct);
+
+        if (session != null)
+        {
+            var playerIds = session.Players
+                .Select(sp => sp.PlayerId)
+                .Distinct()
+                .ToList();
+
+            var title = "برنامه‌ی یک سشن تغییر کرد";
+            var message = $"سشن #{session.Id} به‌روزرسانی شد.";
+
+            var payload = JsonSerializer.Serialize(new
+            {
+                sessionId = session.Id,
+                branchId = session.BranchId,
+                roomId = session.RoomId,
+                startTimeUtc = session.StartTimeUtc,
+                endTimeUtc = session.EndTimeUtc
+            });
+
+            foreach (var pid in playerIds)
+            {
+                await _notifications.CreateAsync(
+                    new CreateNotificationRequest(
+                        UserId: pid,
+                        Title: title,
+                        Message: message,
+                        Type: (byte)NotificationType.SessionUpdated,
+                        DataJson: payload
+                    ),
+                    ct);
+            }
+
+            if (session.ManagerId is not null)
+            {
+                await _notifications.CreateAsync(
+                    new CreateNotificationRequest(
+                        UserId: session.ManagerId.Value,
+                        Title: title,
+                        Message: message,
+                        Type: (byte)NotificationType.SessionUpdated,
+                        DataJson: payload
+                    ),
+                    ct);
+            }
+        }
+
     }
 
     public async Task CancelAsync(long id, CancellationToken ct = default)
     {
-        var session = await _db.Sessions.FirstOrDefaultAsync(s => s.Id == id, ct)
+        // سشن را همراه با بازیکن‌ها لود می‌کنیم
+        var session = await _db.Sessions
+            .Include(s => s.Players)
+            .FirstOrDefaultAsync(s => s.Id == id, ct)
             ?? throw new KeyNotFoundException("Session not found.");
+
+        // اگر قبلاً کنسل شده، دوباره کاری نکنیم
+        if (session.Status == SessionStatus.Canceled)
+            return;
 
         session.Status = SessionStatus.Canceled;
         session.UpdatedAtUtc = DateTime.UtcNow;
 
         await _db.SaveChangesAsync(ct);
+
+        // حالا نوتیفیکیشن‌ها را برای بازیکن‌ها و منیجر می‌سازیم
+        var playerIds = session.Players
+            .Select(sp => sp.PlayerId)
+            .Distinct()
+            .ToList();
+
+        var title = "یک سشن کنسل شد";
+        var message = $"سشن #{session.Id} کنسل شد.";
+
+        var payload = JsonSerializer.Serialize(new
+        {
+            sessionId = session.Id,
+            branchId = session.BranchId,
+            roomId = session.RoomId,
+            startTimeUtc = session.StartTimeUtc,
+            endTimeUtc = session.EndTimeUtc
+        });
+
+        // برای همه‌ی بازیکن‌ها
+        foreach (var pid in playerIds)
+        {
+            await _notifications.CreateAsync(
+                new CreateNotificationRequest(
+                    UserId: pid,
+                    Title: title,
+                    Message: message,
+                    Type: (byte)NotificationType.SessionCanceled,
+                    DataJson: payload
+                ),
+                ct);
+        }
+
+        // برای منیجر (اگر سشن منیجر دارد)
+        if (session.ManagerId is not null)
+        {
+            await _notifications.CreateAsync(
+                new CreateNotificationRequest(
+                    UserId: session.ManagerId.Value,
+                    Title: title,
+                    Message: message,
+                    Type: (byte)NotificationType.SessionCanceled,
+                    DataJson: payload
+                ),
+                ct);
+        }
     }
+
 
     public async Task ChangeStatusAsync(long id, byte status, CancellationToken ct = default)
     {

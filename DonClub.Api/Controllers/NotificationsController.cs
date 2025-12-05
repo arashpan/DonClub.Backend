@@ -58,6 +58,19 @@ public class NotificationsController : ControllerBase
         return NoContent();
     }
 
+    // 🔹 جدید: ادمین/سوپریوزر بتواند نوتیفیکیشن‌های یک کاربر خاص را ببیند
+    // GET /api/notifications/user/{userId}?onlyUnread=true
+    [HttpGet("user/{userId:long}")]
+    [Authorize(Roles = AppRoles.SuperUserOrAdmin)]
+    public async Task<ActionResult<IReadOnlyList<NotificationDto>>> GetUserNotifications(
+        long userId,
+        [FromQuery] bool onlyUnread = false,
+        CancellationToken ct = default)
+    {
+        var items = await _notifications.GetUserNotificationsAsync(userId, onlyUnread, ct);
+        return Ok(items);
+    }
+
     // (اختیاری) ادمین/سوپریوزر بتونه نوتیفیکیشن دستی بفرسته
     [HttpPost]
     [Authorize(Roles = AppRoles.SuperUserOrAdmin)]

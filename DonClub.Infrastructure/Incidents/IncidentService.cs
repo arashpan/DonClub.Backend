@@ -2,16 +2,22 @@
 using Donclub.Domain.Incidents;
 using Donclub.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
+using Donclub.Application.Notifications;
+using Donclub.Domain.Notifications;
+using System.Text.Json;
+
 
 namespace Donclub.Infrastructure.Incidents;
 
 public class IncidentService : IIncidentService
 {
     private readonly DonclubDbContext _db;
+    private readonly INotificationService _notifications;
 
-    public IncidentService(DonclubDbContext db)
+    public IncidentService(DonclubDbContext db, INotificationService notifications)
     {
         _db = db;
+        _notifications = notifications;
     }
 
     public async Task<long> CreateAsync(CreateIncidentRequest request, long createdByUserId, CancellationToken ct = default)
@@ -43,6 +49,20 @@ public class IncidentService : IIncidentService
 
         _db.Incidents.Add(entity);
         await _db.SaveChangesAsync(ct);
+        // Notify manager that an incident has been created for them
+        await _notifications.CreateAsync(
+            new CreateNotificationRequest(
+                UserId: entity.ManagerId,
+                Title: "اینسیدنت جدید برای شما ثبت شد",
+                Message: $"یک اینسیدنت با عنوان «{entity.Title}» برای شما ثبت شد.",
+                Type: (byte)NotificationType.IncidentCreated,
+                DataJson: JsonSerializer.Serialize(new
+                {
+                    incidentId = entity.Id,
+                    sessionId = entity.SessionId
+                })
+            ),
+            ct);
         return entity.Id;
     }
 
@@ -62,6 +82,48 @@ public class IncidentService : IIncidentService
         incident.UpdatedAtUtc = DateTime.UtcNow;
 
         await _db.SaveChangesAsync(ct);
+        var decisionText = incident.Status switch
+        {
+            IncidentStatus.Approved => "تایید شد",
+            IncidentStatus.Rejected => "رد شد",
+            _ => "به‌روزرسانی شد"
+        };
+
+        var title = "اینسیدنت شما بررسی شد";
+        var message = $"اینسیدنت «{incident.Title}» {decisionText}.";
+
+        var payload = JsonSerializer.Serialize(new
+        {
+            incidentId = incident.Id,
+            status = incident.Status,
+            reviewedByUserId = reviewerUserId
+        });
+
+        // برای خود Manager
+        await _notifications.CreateAsync(
+            new CreateNotificationRequest(
+                UserId: incident.ManagerId,
+                Title: title,
+                Message: message,
+                Type: (byte)NotificationType.IncidentResolved,
+                DataJson: payload
+            ),
+            ct);
+
+        // اگر کسی که Incident را ثبت کرده با Manager فرق دارد، به او هم اطلاع بده
+        if (incident.CreatedByUserId != incident.ManagerId)
+        {
+            await _notifications.CreateAsync(
+                new CreateNotificationRequest(
+                    UserId: incident.CreatedByUserId,
+                    Title: title,
+                    Message: message,
+                    Type: (byte)NotificationType.IncidentResolved,
+                    DataJson: payload
+                ),
+                ct);
+        }
+
     }
 
     public async Task<IncidentDetailDto?> GetByIdAsync(long id, CancellationToken ct = default)

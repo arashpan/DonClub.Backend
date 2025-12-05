@@ -10,8 +10,11 @@ public enum NotificationType : byte
     BadgeGranted = 2,
     WalletCredited = 3,
     IncidentCreated = 4,
-    IncidentResolved = 5
+    IncidentResolved = 5,
+    SessionUpdated = 6,
+    SessionCanceled = 7
 }
+
 
 public class Notification : IAuditableEntity
 {
