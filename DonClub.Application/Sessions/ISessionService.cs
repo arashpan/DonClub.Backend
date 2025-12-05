@@ -18,4 +18,17 @@ public interface ISessionService
     Task RemovePlayerAsync(long sessionId, long playerId, CancellationToken ct = default);
 
     Task SetPlayerScoreAsync(long sessionId, long playerId, int score, CancellationToken ct = default);
+    // 🔹 جدید: سشن‌های کاربر به‌عنوان Player
+    Task<IReadOnlyList<SessionSummaryDto>> GetByPlayerAsync(
+        long playerId,
+        DateTime? fromUtc,
+        DateTime? toUtc,
+        CancellationToken ct = default);
+
+    // 🔹 جدید: سشن‌های کاربر به‌عنوان Manager
+    Task<IReadOnlyList<SessionSummaryDto>> GetByManagerAsync(
+        long managerId,
+        DateTime? fromUtc,
+        DateTime? toUtc,
+        CancellationToken ct = default);
 }

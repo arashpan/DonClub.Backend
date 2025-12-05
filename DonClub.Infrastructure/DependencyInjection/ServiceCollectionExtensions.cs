@@ -24,6 +24,8 @@ using Donclub.Application.Achievements;
 using Donclub.Infrastructure.Achievements;
 using Donclub.Application.Rewards;
 using Donclub.Infrastructure.Rewards;
+using Donclub.Application.Profile;
+using Donclub.Infrastructure.Profile;
 
 
 using Microsoft.Extensions.DependencyInjection;
@@ -50,6 +52,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IRewardService, RewardService>();
 
         services.AddScoped<IBranchService, BranchService>();
+        services.AddScoped<IProfileService, ProfileService>();
 
         return services;
     }

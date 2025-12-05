@@ -1,6 +1,10 @@
 ﻿using Donclub.Application.Sessions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
+using Donclub.Domain.Users;
+
 
 namespace Donclub.Api.Controllers;
 
@@ -92,4 +96,70 @@ public class SessionsController : ControllerBase
         await _sessions.SetPlayerScoreAsync(id, request.PlayerId, request.Score, ct);
         return NoContent();
     }
+
+    // GET /api/Sessions/my/player?type=upcoming|history
+    [HttpGet("my/player")]
+    //[Authorize(Roles = AppRoles.Player + "," + AppRoles.ManagerOrAbove)]
+    [Authorize] // هر کاربر لاگین کرده؛ اگر خواستی بعداً فقط Playerها باشن می‌تونیم Role هم اضافه کنیم
+    public async Task<ActionResult<IReadOnlyList<SessionSummaryDto>>> GetMyPlayerSessions(
+        [FromQuery] string type = "upcoming",
+        CancellationToken ct = default)
+    {
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userIdClaim) || !long.TryParse(userIdClaim, out var userId))
+            return Unauthorized();
+
+        var now = DateTime.UtcNow;
+        DateTime? fromUtc = null;
+        DateTime? toUtc = null;
+
+        switch (type.ToLowerInvariant())
+        {
+            case "history":
+                toUtc = now;
+                break;
+            case "all":
+                // بدون فیلتر زمانی
+                break;
+            default: // upcoming
+                fromUtc = now;
+                break;
+        }
+
+        var sessions = await _sessions.GetByPlayerAsync(userId, fromUtc, toUtc, ct);
+        return Ok(sessions);
+    }
+
+    // GET /api/Sessions/my/manager?type=upcoming|history
+    [HttpGet("my/manager")]
+    [Authorize(Roles = AppRoles.ManagerOrAbove)]
+    public async Task<ActionResult<IReadOnlyList<SessionSummaryDto>>> GetMyManagedSessions(
+        [FromQuery] string type = "upcoming",
+        CancellationToken ct = default)
+    {
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userIdClaim) || !long.TryParse(userIdClaim, out var userId))
+            return Unauthorized();
+
+        var now = DateTime.UtcNow;
+        DateTime? fromUtc = null;
+        DateTime? toUtc = null;
+
+        switch (type.ToLowerInvariant())
+        {
+            case "history":
+                toUtc = now;
+                break;
+            case "all":
+                break;
+            default: // upcoming
+                fromUtc = now;
+                break;
+        }
+
+        var sessions = await _sessions.GetByManagerAsync(userId, fromUtc, toUtc, ct);
+        return Ok(sessions);
+    }
+
+
 }

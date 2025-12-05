@@ -238,4 +238,72 @@ public class SessionService : ISessionService
 
         await _db.SaveChangesAsync(ct);
     }
+
+    public async Task<IReadOnlyList<SessionSummaryDto>> GetByPlayerAsync(
+    long playerId,
+    DateTime? fromUtc,
+    DateTime? toUtc,
+    CancellationToken ct = default)
+    {
+        var query = _db.Sessions.AsQueryable();
+
+        // فقط سشن‌هایی که این کاربر داخل‌شون Player است
+        query = query.Where(s =>
+            _db.SessionPlayers.Any(sp => sp.SessionId == s.Id && sp.PlayerId == playerId));
+
+        if (fromUtc.HasValue)
+            query = query.Where(s => s.StartTimeUtc >= fromUtc.Value);
+
+        if (toUtc.HasValue)
+            query = query.Where(s => s.StartTimeUtc < toUtc.Value);
+
+        return await query
+            .OrderBy(s => s.StartTimeUtc)
+            .Select(s => new SessionSummaryDto(
+                s.Id,
+                s.BranchId,
+                s.RoomId,
+                s.GameId,
+                s.ScenarioId,
+                s.ManagerId,
+                s.StartTimeUtc,
+                s.EndTimeUtc,
+                (byte)s.Status,
+                (byte)s.Tier
+            ))
+            .ToListAsync(ct);
+    }
+
+    public async Task<IReadOnlyList<SessionSummaryDto>> GetByManagerAsync(
+        long managerId,
+        DateTime? fromUtc,
+        DateTime? toUtc,
+        CancellationToken ct = default)
+    {
+        var query = _db.Sessions
+            .Where(s => s.ManagerId == managerId);
+
+        if (fromUtc.HasValue)
+            query = query.Where(s => s.StartTimeUtc >= fromUtc.Value);
+
+        if (toUtc.HasValue)
+            query = query.Where(s => s.StartTimeUtc < toUtc.Value);
+
+        return await query
+            .OrderBy(s => s.StartTimeUtc)
+            .Select(s => new SessionSummaryDto(
+                s.Id,
+                s.BranchId,
+                s.RoomId,
+                s.GameId,
+                s.ScenarioId,
+                s.ManagerId,
+                s.StartTimeUtc,
+                s.EndTimeUtc,
+                (byte)s.Status,
+                (byte)s.Tier
+            ))
+            .ToListAsync(ct);
+    }
+
 }
