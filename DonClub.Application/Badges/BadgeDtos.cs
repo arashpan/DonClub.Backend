@@ -6,7 +6,8 @@ public record BadgeDto(
     string? Code,
     string? Description,
     string? IconUrl,
-    bool IsActive
+    bool IsActive,
+    decimal? RewardWalletAmount   // 👈 این
 );
 
 public record PlayerBadgeDto(
@@ -25,7 +26,9 @@ public record CreateBadgeRequest(
     string Name,
     string? Code,
     string? Description,
-    string? IconUrl
+    string? IconUrl,
+    bool IsActive,
+    decimal? RewardWalletAmount
 );
 
 public record UpdateBadgeRequest(
@@ -33,7 +36,8 @@ public record UpdateBadgeRequest(
     string? Code,
     string? Description,
     string? IconUrl,
-    bool IsActive
+    bool IsActive,
+    decimal? RewardWalletAmount
 );
 
 public record GrantBadgeRequest(

@@ -26,7 +26,8 @@ public class BadgeService : IBadgeService
                 b.Code,
                 b.Description,
                 b.IconUrl,
-                b.IsActive
+                b.IsActive,
+                b.RewardWalletAmount
             ))
             .ToListAsync(ct);
     }
@@ -42,7 +43,8 @@ public class BadgeService : IBadgeService
             b.Code,
             b.Description,
             b.IconUrl,
-            b.IsActive
+            b.IsActive,
+            b.RewardWalletAmount
         );
     }
 
@@ -55,7 +57,8 @@ public class BadgeService : IBadgeService
             Description = request.Description,
             IconUrl = request.IconUrl,
             IsActive = true,
-            CreatedAtUtc = DateTime.UtcNow
+            CreatedAtUtc = DateTime.UtcNow,
+            RewardWalletAmount = request.RewardWalletAmount
         };
 
         _db.Badges.Add(entity);
@@ -74,6 +77,7 @@ public class BadgeService : IBadgeService
         b.IconUrl = request.IconUrl;
         b.IsActive = request.IsActive;
         b.UpdatedAtUtc = DateTime.UtcNow;
+        b.RewardWalletAmount = request.RewardWalletAmount;
 
         await _db.SaveChangesAsync(ct);
     }

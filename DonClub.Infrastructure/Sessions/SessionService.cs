@@ -1,4 +1,5 @@
 ﻿using Donclub.Application.Sessions;
+using Donclub.Application.Achievements;
 using Donclub.Domain.Sessions;
 using Donclub.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -8,10 +9,12 @@ namespace Donclub.Infrastructure.Sessions;
 public class SessionService : ISessionService
 {
     private readonly DonclubDbContext _db;
+    private readonly IAchievementService _achievements;
 
-    public SessionService(DonclubDbContext db)
+    public SessionService(DonclubDbContext db, IAchievementService achievements)
     {
         _db = db;
+        _achievements = achievements;
     }
 
     // -------------------- Create / Update / Status --------------------
@@ -79,8 +82,13 @@ public class SessionService : ISessionService
 
         session.Status = (SessionStatus)status;
         session.UpdatedAtUtc = DateTime.UtcNow;
-
+        
+        if (session.Status == SessionStatus.Ended)
+        {
+            await _achievements.ProcessSessionCompletedAsync(session.Id, ct);
+        }
         await _db.SaveChangesAsync(ct);
+
     }
 
     // -------------------- Query --------------------

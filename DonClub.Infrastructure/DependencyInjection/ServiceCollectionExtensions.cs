@@ -18,6 +18,12 @@ using Donclub.Application.Incidents;
 using Donclub.Infrastructure.Incidents;
 using Donclub.Application.Missions;
 using Donclub.Infrastructure.Missions;
+using Donclub.Application.Settings;
+using Donclub.Infrastructure.Settings;
+using Donclub.Application.Achievements;
+using Donclub.Infrastructure.Achievements;
+using Donclub.Application.Rewards;
+using Donclub.Infrastructure.Rewards;
 
 
 using Microsoft.Extensions.DependencyInjection;
@@ -39,6 +45,9 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IBadgeService, BadgeService>();
         services.AddScoped<IIncidentService, IncidentService>();
         services.AddScoped<IMissionService, MissionService>();
+        services.AddScoped<IOtpSettingsService, OtpSettingsService>();
+        services.AddScoped<IAchievementService, AchievementService>();
+        services.AddScoped<IRewardService, RewardService>();
 
         services.AddScoped<IBranchService, BranchService>();
 

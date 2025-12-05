@@ -4,6 +4,7 @@ using Donclub.Domain.Auth;
 using Donclub.Domain.Users;
 using Donclub.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
+using Donclub.Application.Settings;
 
 namespace Donclub.Infrastructure.Auth;
 
@@ -13,18 +14,39 @@ public class AuthService : IAuthService
     private readonly IJwtTokenGenerator _jwt;
     private readonly ISmsSender _sms;
     private readonly IDateTimeProvider _clock;
+    private readonly IOtpSettingsService _otpSettings;
 
-    public AuthService(DonclubDbContext db, IJwtTokenGenerator jwt, ISmsSender sms, IDateTimeProvider clock)
+    public AuthService(DonclubDbContext db, IJwtTokenGenerator jwt, ISmsSender sms, IDateTimeProvider clock, IOtpSettingsService otpSettings)
     {
         _db = db;
         _jwt = jwt;
         _sms = sms;
         _clock = clock;
+        _otpSettings = otpSettings;
     }
 
     public async Task<RequestOtpResultDto> RequestOtpAsync(string phoneNumber, CancellationToken ct = default)
     {
         phoneNumber = NormalizePhone(phoneNumber);
+
+        // --- Rate limiting برای درخواست OTP ---
+        var config = await _otpSettings.GetOtpRateLimitAsync(ct);
+
+        if (config.IsEnabled)
+        {
+            var now = _clock.UtcNow;
+            var windowStart = now.AddMinutes(-config.WindowMinutes);
+
+            var recentCount = await _db.SmsOtps
+                .CountAsync(x => x.PhoneNumber == phoneNumber && x.CreatedAtUtc >= windowStart, ct);
+
+            if (recentCount >= config.MaxRequestsPerWindow)
+            {
+                throw new InvalidOperationException(
+                    $"در حال حاضر حداکثر {config.MaxRequestsPerWindow} درخواست کد در هر {config.WindowMinutes} دقیقه مجاز است. لطفاً بعداً دوباره تلاش کنید.");
+            }
+        }
+
 
         // OTP شش رقمی
         var code = Random.Shared.Next(100000, 999999).ToString();

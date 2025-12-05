@@ -10,6 +10,7 @@ public class Badge : BaseEntity<int>, IAuditableEntity
     public string? Description { get; set; }
     public string? IconUrl { get; set; }     // optional link to icon
     public bool IsActive { get; set; } = true;
+    public decimal? RewardWalletAmount { get; set; }
 
     /// <summary>
     /// Optional JSON condition metadata (e.g. first_win, 100_sessions, VIP_only).

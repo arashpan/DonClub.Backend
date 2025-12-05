@@ -8,6 +8,8 @@ using Donclub.Domain.Wallets;
 using Donclub.Domain.Badges;
 using Donclub.Domain.Incidents;
 using Donclub.Domain.Missions;
+using Donclub.Domain.Settings;
+
 
 using Microsoft.EntityFrameworkCore;
 
@@ -16,7 +18,7 @@ namespace Donclub.Infrastructure.Persistence;
 public class DonclubDbContext : DbContext
 {
     public DonclubDbContext(DbContextOptions<DonclubDbContext> options) : base(options) { }
-
+    public DbSet<SystemSetting> SystemSettings => Set<SystemSetting>();
     public DbSet<User> Users => Set<User>();
     public DbSet<Role> Roles => Set<Role>();
     public DbSet<UserRole> UserRoles => Set<UserRole>();
@@ -133,6 +135,7 @@ public class DonclubDbContext : DbContext
             e.HasKey(x => x.Id);
             e.Property(x => x.Name).IsRequired().HasMaxLength(100);
             e.Property(x => x.Code).HasMaxLength(100);
+            e.Property(x => x.RewardWalletAmount).HasColumnType("decimal(18,2)");
 
             e.HasIndex(x => x.Code).IsUnique().HasFilter("[Code] IS NOT NULL");
         });
@@ -327,7 +330,6 @@ public class DonclubDbContext : DbContext
                 .HasForeignKey(x => x.PlayerId)
                 .OnDelete(DeleteBehavior.NoAction);
         });
-
         b.Entity<Score>(e =>
         {
             e.HasKey(x => x.Id);
@@ -379,6 +381,25 @@ public class DonclubDbContext : DbContext
             e.HasKey(x => x.Id);
             e.HasIndex(x => new { x.PhoneNumber, x.Code });
         });
+
+        // SystemSettings
+        b.Entity<SystemSetting>(e =>
+        {
+            e.HasKey(x => x.Id);
+
+            e.Property(x => x.Key)
+                .IsRequired()
+                .HasMaxLength(200);
+
+            e.Property(x => x.Value)
+                .HasMaxLength(1000);
+
+            e.Property(x => x.Description)
+                .HasMaxLength(500);
+
+            e.HasIndex(x => x.Key).IsUnique();
+        });
+
 
         // Seed roles پایه
         b.Entity<Role>().HasData(
