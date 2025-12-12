@@ -457,5 +457,7 @@ The backend is a Clean Architecture ASP.NET Core solution implemented with:
 - SQL Server via EF Core Code-First
 
 Assume all modules described above already exist and are functioning. When I ask questions or new tasks, build on top of the existing architecture without breaking it.
+
+
 ✔️ Conclusion
 This README provides a complete overview of the DonClub Backend architecture, modules, setup, and future development plans.
