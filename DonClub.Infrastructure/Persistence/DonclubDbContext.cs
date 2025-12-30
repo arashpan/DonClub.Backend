@@ -59,7 +59,7 @@ public class DonclubDbContext : DbContext
     protected override void OnModelCreating(ModelBuilder b)
     {
         b.HasDefaultSchema("app");
-        
+
         b.Entity<Notification>(e =>
         {
             e.ToTable("Notifications", "app");
@@ -439,7 +439,8 @@ public class DonclubDbContext : DbContext
             new Role { Id = 1, Name = "SuperUser" },
             new Role { Id = 2, Name = "Admin" },
             new Role { Id = 3, Name = "Manager" },
-            new Role { Id = 4, Name = "Player" }
+            new Role { Id = 4, Name = "Player" },
+            new Role { Id = 5, Name = "Operator" }
         );
 
         base.OnModelCreating(b);
