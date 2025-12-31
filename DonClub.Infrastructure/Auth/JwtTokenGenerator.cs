@@ -1,9 +1,9 @@
-﻿using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
-using Donclub.Application.Auth;
+﻿using Donclub.Application.Auth;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
 
 namespace Donclub.Infrastructure.Auth;
 
@@ -22,7 +22,7 @@ public class JwtTokenGenerator : IJwtTokenGenerator
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSection["Key"]!));
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
-        var now = DateTime.UtcNow;
+        var now = DateTime.Now;
         var expires = now.AddMinutes(30); // فعلاً ۳۰ دقیقه
 
         var claims = new List<Claim>

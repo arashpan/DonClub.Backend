@@ -6,7 +6,7 @@ namespace Donclub.Application.Users;
 
 public interface IUserService
 {
-    Task<IReadOnlyList<UserListItemDto>> GetAllAsync(string? search, CancellationToken ct = default);
+    Task<IReadOnlyList<UserListItemDto>> GetAllAsync(string? search, string? role, CancellationToken ct = default);
     Task<UserDetailDto?> GetByIdAsync(long id, CancellationToken ct = default);
 
     Task<long> CreateAsync(CreateUserRequest request, CancellationToken ct = default);

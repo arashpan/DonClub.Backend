@@ -61,8 +61,6 @@
 
 //app.Run();
 
-using System.Net;
-using System.Text;
 using Donclub.Api.Middleware;
 using Donclub.Infrastructure.DependencyInjection;
 using Donclub.Infrastructure.Persistence;
@@ -70,6 +68,9 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi;
+using System.Net;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -78,7 +79,26 @@ var builder = WebApplication.CreateBuilder(args);
 // MVC + Swagger
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options =>
+{
+	const string schemeId = "bearer";
+
+	options.AddSecurityDefinition(schemeId, new OpenApiSecurityScheme
+	{
+		Type = SecuritySchemeType.Http,
+		Scheme = "bearer",
+		BearerFormat = "JWT",
+		Name = "Authorization",
+		In = ParameterLocation.Header,
+		Description = "JWT Authorization header using the Bearer scheme."
+	});
+
+	options.AddSecurityRequirement(document => new OpenApiSecurityRequirement
+	{
+		[new OpenApiSecuritySchemeReference(schemeId, document)] = []
+	});
+});
+
 
 // DbContext
 builder.Services.AddDbContext<DonclubDbContext>(opt =>

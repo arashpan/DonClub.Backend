@@ -14,7 +14,7 @@ public class UserService : IUserService
         _db = db;
     }
 
-    public async Task<IReadOnlyList<UserListItemDto>> GetAllAsync(string? search, CancellationToken ct = default)
+    public async Task<IReadOnlyList<UserListItemDto>> GetAllAsync(string? search, string? role, CancellationToken ct = default)
     {
         var query = _db.Users
             .Include(u => u.UserRoles).ThenInclude(ur => ur.Role)
@@ -27,6 +27,12 @@ public class UserService : IUserService
                 u.PhoneNumber.Contains(search) ||
                 (u.DisplayName != null && u.DisplayName.Contains(search)) ||
                 (u.UserName != null && u.UserName.Contains(search)));
+        }
+
+        if (!string.IsNullOrWhiteSpace(role))
+        {
+            var normalizedRole = role.Trim().ToLower();
+            query = query.Where(u => u.UserRoles.Any(ur => ur.Role.Name.ToLower() == normalizedRole));
         }
 
         return await query
