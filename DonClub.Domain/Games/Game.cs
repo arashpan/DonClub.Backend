@@ -25,13 +25,17 @@ public enum GameRoleTeam : byte
 
 public class GameRole : BaseEntity<int>
 {
-    public int GameId { get; set; }
+    /// <summary>
+    /// When null, this role is a global/shared role and is not bound to a specific game.
+    /// Global roles can be used in any game/scenario.
+    /// </summary>
+    public int? GameId { get; set; }
     public string Name { get; set; } = default!;
     public GameRoleTeam Team { get; set; } = GameRoleTeam.Neutral;
     public string? Description { get; set; }
     public bool IsActive { get; set; } = true;
 
-    public Game Game { get; set; } = default!;
+    public Game? Game { get; set; }
 }
 
 public class Scenario : BaseEntity<int>

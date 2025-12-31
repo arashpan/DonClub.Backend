@@ -74,6 +74,37 @@ public class GamesController : ControllerBase
         return NoContent();
     }
 
+    // ------------------ Global/Shared Roles ------------------
+
+    /// <summary>
+    /// Global roles are stored in GameRoles table with GameId = NULL
+    /// and can be used in any game/scenario.
+    /// </summary>
+    [HttpGet("roles/global")]
+    public async Task<ActionResult<IReadOnlyList<GameRoleDto>>> GetGlobalRoles(CancellationToken ct)
+        => Ok(await _games.GetGlobalRolesAsync(ct));
+
+    [HttpPost("roles/global")]
+    public async Task<ActionResult> AddGlobalRole(CreateGameRoleRequest req, CancellationToken ct)
+    {
+        var id = await _games.AddGlobalRoleAsync(req, ct);
+        return Ok(new { roleId = id });
+    }
+
+    [HttpPut("roles/global/{roleId:int}")]
+    public async Task<ActionResult> UpdateGlobalRole(int roleId, UpdateGameRoleRequest req, CancellationToken ct)
+    {
+        await _games.UpdateGlobalRoleAsync(roleId, req, ct);
+        return NoContent();
+    }
+
+    [HttpDelete("roles/global/{roleId:int}")]
+    public async Task<ActionResult> DeleteGlobalRole(int roleId, CancellationToken ct)
+    {
+        await _games.DeleteGlobalRoleAsync(roleId, ct);
+        return NoContent();
+    }
+
     // ------------------ Scenarios ------------------
 
     [HttpPost("{gameId:int}/scenarios")]

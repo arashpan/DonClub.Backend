@@ -280,11 +280,22 @@ public class DonclubDbContext : DbContext
         {
             e.HasKey(x => x.Id);
             e.Property(x => x.Name).IsRequired().HasMaxLength(100);
-            e.HasIndex(x => new { x.GameId, x.Name }).IsUnique();
+
+            // GameId == NULL  -> global/shared role
+            // GameId != NULL  -> game-specific role
+            // Ensure uniqueness within each scope.
+            e.HasIndex(x => new { x.GameId, x.Name })
+                .IsUnique()
+                .HasFilter("[GameId] IS NOT NULL");
+
+            e.HasIndex(x => x.Name)
+                .IsUnique()
+                .HasFilter("[GameId] IS NULL");
 
             e.HasOne(x => x.Game)
                 .WithMany(g => g.Roles)
-                .HasForeignKey(x => x.GameId);
+                .HasForeignKey(x => x.GameId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         b.Entity<Scenario>(e =>

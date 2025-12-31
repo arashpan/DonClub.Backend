@@ -18,6 +18,12 @@ public interface IGameService
     Task UpdateRoleAsync(int gameId, int roleId, UpdateGameRoleRequest request, CancellationToken ct = default);
     Task DeleteRoleAsync(int gameId, int roleId, CancellationToken ct = default);
 
+    // Global/Shared Roles (not bound to a game)
+    Task<IReadOnlyList<GameRoleDto>> GetGlobalRolesAsync(CancellationToken ct = default);
+    Task<int> AddGlobalRoleAsync(CreateGameRoleRequest request, CancellationToken ct = default);
+    Task UpdateGlobalRoleAsync(int roleId, UpdateGameRoleRequest request, CancellationToken ct = default);
+    Task DeleteGlobalRoleAsync(int roleId, CancellationToken ct = default);
+
     // Scenarios
     Task<int> AddScenarioAsync(int gameId, CreateScenarioRequest request, CancellationToken ct = default);
     Task UpdateScenarioAsync(int gameId, int scenarioId, UpdateScenarioRequest request, CancellationToken ct = default);
