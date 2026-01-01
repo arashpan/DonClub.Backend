@@ -35,7 +35,8 @@ namespace Donclub.Api.Tests.Controllers
 
             var expected = new RequestOtpResultDto(
                 PhoneNumber: phoneNumber,
-                ExpiresAtUtc: DateTime.UtcNow.AddMinutes(2)
+                ExpiresAtUtc: DateTime.UtcNow.AddMinutes(2),
+                Code: "123456"
             );
 
             _authServiceMock

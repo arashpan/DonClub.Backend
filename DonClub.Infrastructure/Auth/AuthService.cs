@@ -3,9 +3,8 @@ using Donclub.Application.Common;
 using Donclub.Domain.Auth;
 using Donclub.Domain.Users;
 using Donclub.Infrastructure.Persistence;
-using Microsoft.EntityFrameworkCore;
-using Donclub.Application.Settings;
 using Donclub.Infrastructure.Users;
+using Microsoft.EntityFrameworkCore;
 
 
 namespace Donclub.Infrastructure.Auth;
@@ -76,7 +75,7 @@ public class AuthService : IAuthService
 
         await _sms.SendAsync(phoneNumber, $"کد ورود شما به دان‌کلاب: {code}", ct);
 
-        return new RequestOtpResultDto(phoneNumber, expires);
+        return new RequestOtpResultDto(phoneNumber, expires, code.ToString());
     }
 
     public async Task<AuthResultDto> VerifyOtpAsync(string phoneNumber, string code, CancellationToken ct = default)
@@ -102,45 +101,45 @@ public class AuthService : IAuthService
 
         if (user == null)
         {
-			user = new User
-			{
-				UserName = phoneNumber,
-				PhoneNumber = phoneNumber,
-				PhoneNumberConfirmed = true,
-				MembershipLevel = MembershipLevel.Guest,
-				IsActive = true,
-				UserCode = await UserCodeGenerator.GenerateUniqueAsync(_db, ct)
-			};
+            user = new User
+            {
+                UserName = phoneNumber,
+                PhoneNumber = phoneNumber,
+                PhoneNumberConfirmed = true,
+                MembershipLevel = MembershipLevel.Guest,
+                IsActive = true,
+                UserCode = await UserCodeGenerator.GenerateUniqueAsync(_db, ct)
+            };
 
-			_db.Users.Add(user);
+            _db.Users.Add(user);
 
-			// اگر به‌صورت خیلی نادر برخورد Unique رخ داد، دوباره کد بساز
-			for (var attempt = 0; attempt < 10; attempt++)
-			{
-				try
-				{
-					await _db.SaveChangesAsync(ct);
-					break;
-				}
-				catch (DbUpdateException ex) when (UserCodeGenerator.IsUserCodeUniqueViolation(ex) && attempt < 9)
-				{
-					user.UserCode = await UserCodeGenerator.GenerateUniqueAsync(_db, ct);
-				}
-			}
+            // اگر به‌صورت خیلی نادر برخورد Unique رخ داد، دوباره کد بساز
+            for (var attempt = 0; attempt < 10; attempt++)
+            {
+                try
+                {
+                    await _db.SaveChangesAsync(ct);
+                    break;
+                }
+                catch (DbUpdateException ex) when (UserCodeGenerator.IsUserCodeUniqueViolation(ex) && attempt < 9)
+                {
+                    user.UserCode = await UserCodeGenerator.GenerateUniqueAsync(_db, ct);
+                }
+            }
 
-			// نقش Player به صورت پیش‌فرض
-			var playerRole = await _db.Roles.FirstAsync(r => r.Name == "Player", ct);
+            // نقش Player به صورت پیش‌فرض
+            var playerRole = await _db.Roles.FirstAsync(r => r.Name == "Player", ct);
             _db.UserRoles.Add(new UserRole { UserId = user.Id, RoleId = playerRole.Id });
             await _db.SaveChangesAsync(ct);
         }
         else
         {
             user.PhoneNumberConfirmed = true;
-			if (string.IsNullOrWhiteSpace(user.UserCode))
-			{
-				user.UserCode = await UserCodeGenerator.GenerateUniqueAsync(_db, ct);
-			}
-			await _db.SaveChangesAsync(ct);
+            if (string.IsNullOrWhiteSpace(user.UserCode))
+            {
+                user.UserCode = await UserCodeGenerator.GenerateUniqueAsync(_db, ct);
+            }
+            await _db.SaveChangesAsync(ct);
         }
 
         // در این مرحله، برای اینکه مطمئن باشیم Roleها همیشه درستند (حتی در اولین لاگین):
@@ -167,7 +166,7 @@ public class AuthService : IAuthService
 
         var tokensDto = new AuthTokensDto(access, refresh, accessExp, refreshExp);
         var userDto = new UserDto(user.Id, user.PhoneNumber, user.DisplayName, roles, user.UserCode);
-		return new AuthResultDto(userDto, tokensDto);
+        return new AuthResultDto(userDto, tokensDto);
     }
 
     public async Task<AuthResultDto> RefreshAsync(string refreshToken, CancellationToken ct = default)
@@ -208,7 +207,7 @@ public class AuthService : IAuthService
 
         var tokensDto = new AuthTokensDto(access, newRefresh, accessExp, newRefreshExp);
         var userDto = new UserDto(user.Id, user.PhoneNumber, user.DisplayName, roles, user.UserCode);
-		return new AuthResultDto(userDto, tokensDto);
+        return new AuthResultDto(userDto, tokensDto);
     }
 
     private static string NormalizePhone(string phone)

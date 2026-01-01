@@ -12,7 +12,7 @@ public record UserDto(
     string PhoneNumber,
     string? DisplayName,
     string[] Roles,
-	string UserCode
+    string UserCode
 );
 
 public record AuthResultDto(
@@ -22,5 +22,6 @@ public record AuthResultDto(
 
 public record RequestOtpResultDto(
     string PhoneNumber,
-    DateTime ExpiresAtUtc
+    DateTime ExpiresAtUtc,
+    string Code
 );
