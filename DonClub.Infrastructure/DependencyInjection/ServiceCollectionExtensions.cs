@@ -1,35 +1,35 @@
-﻿using Donclub.Application.Auth;
-using Donclub.Application.Common;
-using Donclub.Infrastructure.Auth;
-using Donclub.Infrastructure.Common;
-using Donclub.Application.Branches;
-using Donclub.Infrastructure.Branches;
-using Donclub.Application.Games;
-using Donclub.Infrastructure.Games;
-using Donclub.Application.Sessions;
-using Donclub.Infrastructure.Sessions;
-using Donclub.Application.Users;
-using Donclub.Infrastructure.Users;
-using Donclub.Application.Wallets;
-using Donclub.Infrastructure.Wallets;
+﻿using Donclub.Application.Achievements;
+using Donclub.Application.Auth;
 using Donclub.Application.Badges;
-using Donclub.Infrastructure.Badges;
+using Donclub.Application.Branches;
+using Donclub.Application.Common;
+using Donclub.Application.Games;
 using Donclub.Application.Incidents;
-using Donclub.Infrastructure.Incidents;
 using Donclub.Application.Missions;
-using Donclub.Infrastructure.Missions;
-using Donclub.Application.Settings;
-using Donclub.Infrastructure.Settings;
-using Donclub.Application.Achievements;
-using Donclub.Infrastructure.Achievements;
-using Donclub.Application.Rewards;
-using Donclub.Infrastructure.Rewards;
-using Donclub.Application.Profile;
-using Donclub.Infrastructure.Profile;
 using Donclub.Application.Notifications;
+using Donclub.Application.Profile;
+using Donclub.Application.Rewards;
+using Donclub.Application.Sessions;
+using Donclub.Application.Settings;
+using Donclub.Application.Users;
+using Donclub.Application.Wallets;
+using Donclub.Infrastructure.Achievements;
+using Donclub.Infrastructure.Auth;
+using Donclub.Infrastructure.Badges;
+using Donclub.Infrastructure.Branches;
+using Donclub.Infrastructure.Common;
+using Donclub.Infrastructure.Games;
+using Donclub.Infrastructure.Incidents;
+using Donclub.Infrastructure.Missions;
 using Donclub.Infrastructure.Notifications;
-
-
+using Donclub.Infrastructure.Profile;
+using Donclub.Infrastructure.Rewards;
+using Donclub.Infrastructure.Sessions;
+using Donclub.Infrastructure.Settings;
+using Donclub.Infrastructure.Users;
+using Donclub.Infrastructure.Wallets;
+using DonClub.Application.AdminUsers;
+using DonClub.Infrastructure.AdminUsers;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Donclub.Infrastructure.DependencyInjection;
@@ -55,6 +55,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<INotificationService, NotificationService>();
         services.AddScoped<IBranchService, BranchService>();
         services.AddScoped<IProfileService, ProfileService>();
+        services.AddScoped<IAdminUserService, AdminUserService>();
 
         return services;
     }
