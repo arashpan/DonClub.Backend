@@ -21,10 +21,10 @@ public class UsersController : ControllerBase
 
     // GET /api/users?search=...
     [HttpGet]
-    public async Task<ActionResult<IReadOnlyList<UserListItemDto>>> GetAll([FromQuery] string? search, CancellationToken ct)
+    public async Task<ActionResult<IReadOnlyList<UserListItemDto>>> GetAll([FromQuery] string? search,[FromQuery] string? role, CancellationToken ct)
     {
-        var result = await _users.GetAllAsync(search, ct);
-        return Ok(result);
+		var result = await _users.GetAllAsync(search, role, ct);
+		return Ok(result);
     }
 
     // GET /api/users/5

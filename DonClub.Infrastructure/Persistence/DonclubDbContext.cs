@@ -59,7 +59,7 @@ public class DonclubDbContext : DbContext
     protected override void OnModelCreating(ModelBuilder b)
     {
         b.HasDefaultSchema("app");
-        
+
         b.Entity<Notification>(e =>
         {
             e.ToTable("Notifications", "app");
@@ -280,11 +280,22 @@ public class DonclubDbContext : DbContext
         {
             e.HasKey(x => x.Id);
             e.Property(x => x.Name).IsRequired().HasMaxLength(100);
-            e.HasIndex(x => new { x.GameId, x.Name }).IsUnique();
+
+            // GameId == NULL  -> global/shared role
+            // GameId != NULL  -> game-specific role
+            // Ensure uniqueness within each scope.
+            e.HasIndex(x => new { x.GameId, x.Name })
+                .IsUnique()
+                .HasFilter("[GameId] IS NOT NULL");
+
+            e.HasIndex(x => x.Name)
+                .IsUnique()
+                .HasFilter("[GameId] IS NULL");
 
             e.HasOne(x => x.Game)
                 .WithMany(g => g.Roles)
-                .HasForeignKey(x => x.GameId);
+                .HasForeignKey(x => x.GameId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         b.Entity<Scenario>(e =>
@@ -439,7 +450,8 @@ public class DonclubDbContext : DbContext
             new Role { Id = 1, Name = "SuperUser" },
             new Role { Id = 2, Name = "Admin" },
             new Role { Id = 3, Name = "Manager" },
-            new Role { Id = 4, Name = "Player" }
+            new Role { Id = 4, Name = "Player" },
+            new Role { Id = 5, Name = "Operator" }
         );
 
         base.OnModelCreating(b);

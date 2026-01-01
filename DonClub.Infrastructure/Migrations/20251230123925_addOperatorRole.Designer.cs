@@ -4,6 +4,7 @@ using Donclub.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DonClub.Infrastructure.Migrations
 {
     [DbContext(typeof(DonclubDbContext))]
-    partial class DonclubDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251230123925_addOperatorRole")]
+    partial class addOperatorRole
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -227,7 +230,7 @@ namespace DonClub.Infrastructure.Migrations
                     b.Property<string>("Description")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int?>("GameId")
+                    b.Property<int>("GameId")
                         .HasColumnType("int");
 
                     b.Property<bool>("IsActive")
@@ -243,13 +246,8 @@ namespace DonClub.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("Name")
-                        .IsUnique()
-                        .HasFilter("[GameId] IS NULL");
-
                     b.HasIndex("GameId", "Name")
-                        .IsUnique()
-                        .HasFilter("[GameId] IS NOT NULL");
+                        .IsUnique();
 
                     b.ToTable("GameRoles", "app");
                 });
@@ -1010,7 +1008,8 @@ namespace DonClub.Infrastructure.Migrations
                     b.HasOne("Donclub.Domain.Games.Game", "Game")
                         .WithMany("Roles")
                         .HasForeignKey("GameId")
-                        .OnDelete(DeleteBehavior.Cascade);
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("Game");
                 });

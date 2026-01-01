@@ -58,12 +58,21 @@ public class GameService : IGameService
     {
         var game = await _db.Games
             .Include(g => g.Roles)
-            .Include(g => g.Scenarios).ThenInclude(s => s.ScenarioRoles)
+            .Include(g => g.Scenarios)
+                .ThenInclude(s => s.ScenarioRoles)
+                    .ThenInclude(sr => sr.GameRole)
             .FirstOrDefaultAsync(g => g.Id == id, ct);
 
         if (game == null) return null;
 
+        // Include global/shared roles as well (GameId == NULL)
+        var globalRoles = await _db.GameRoles
+            .Where(r => r.GameId == null)
+            .ToListAsync(ct);
+
         var roles = game.Roles
+            .Concat(globalRoles)
+            .OrderBy(r => r.Name)
             .Select(r => new GameRoleDto(r.Id, r.Name, (byte)r.Team, r.Description))
             .ToList();
 
@@ -75,7 +84,7 @@ public class GameService : IGameService
                 s.ScenarioRoles
                     .Select(sr => new ScenarioRoleDto(
                         sr.GameRoleId,
-                        game.Roles.First(r => r.Id == sr.GameRoleId).Name,
+                        sr.GameRole.Name,
                         sr.Count
                     )).ToList()
             )).ToList();
@@ -101,6 +110,11 @@ public class GameService : IGameService
         if (!exists)
             throw new KeyNotFoundException("Game not found.");
 
+        var duplicate = await _db.GameRoles
+            .AnyAsync(r => r.GameId == gameId && r.Name == request.Name, ct);
+        if (duplicate)
+            throw new InvalidOperationException("Role name already exists for this game.");
+
         var role = new GameRole
         {
             GameId = gameId,
@@ -115,11 +129,81 @@ public class GameService : IGameService
         return role.Id;
     }
 
+    // --------------------------------------------------------------------
+    // Global/Shared Roles (GameId == NULL)
+    // --------------------------------------------------------------------
+
+    public async Task<IReadOnlyList<GameRoleDto>> GetGlobalRolesAsync(CancellationToken ct = default)
+    {
+        return await _db.GameRoles
+            .Where(r => r.GameId == null)
+            .OrderBy(r => r.Name)
+            .Select(r => new GameRoleDto(r.Id, r.Name, (byte)r.Team, r.Description))
+            .ToListAsync(ct);
+    }
+
+    public async Task<int> AddGlobalRoleAsync(CreateGameRoleRequest request, CancellationToken ct = default)
+    {
+        var duplicate = await _db.GameRoles
+            .AnyAsync(r => r.GameId == null && r.Name == request.Name, ct);
+        if (duplicate)
+            throw new InvalidOperationException("Global role name already exists.");
+
+        var role = new GameRole
+        {
+            GameId = null,
+            Name = request.Name,
+            Team = (GameRoleTeam)request.Team,
+            Description = request.Description,
+            IsActive = true
+        };
+
+        _db.GameRoles.Add(role);
+        await _db.SaveChangesAsync(ct);
+        return role.Id;
+    }
+
+    public async Task UpdateGlobalRoleAsync(int roleId, UpdateGameRoleRequest request, CancellationToken ct = default)
+    {
+        var role = await _db.GameRoles
+            .FirstOrDefaultAsync(r => r.Id == roleId && r.GameId == null, ct)
+            ?? throw new KeyNotFoundException("Global role not found.");
+
+        var duplicate = await _db.GameRoles
+            .AnyAsync(r => r.Id != roleId && r.GameId == null && r.Name == request.Name, ct);
+        if (duplicate)
+            throw new InvalidOperationException("Global role name already exists.");
+
+        role.Name = request.Name;
+        role.Team = (GameRoleTeam)request.Team;
+        role.Description = request.Description;
+        role.IsActive = request.IsActive;
+
+        await _db.SaveChangesAsync(ct);
+    }
+
+    public async Task DeleteGlobalRoleAsync(int roleId, CancellationToken ct = default)
+    {
+        var role = await _db.GameRoles
+            .FirstOrDefaultAsync(r => r.Id == roleId && r.GameId == null, ct);
+
+        if (role == null)
+            return;
+
+        _db.GameRoles.Remove(role);
+        await _db.SaveChangesAsync(ct);
+    }
+
     public async Task UpdateRoleAsync(int gameId, int roleId, UpdateGameRoleRequest request, CancellationToken ct = default)
     {
         var role = await _db.GameRoles
             .FirstOrDefaultAsync(r => r.Id == roleId && r.GameId == gameId, ct)
             ?? throw new KeyNotFoundException("Role not found.");
+
+        var duplicate = await _db.GameRoles
+            .AnyAsync(r => r.Id != roleId && r.GameId == gameId && r.Name == request.Name, ct);
+        if (duplicate)
+            throw new InvalidOperationException("Role name already exists for this game.");
 
         role.Name = request.Name;
         role.Team = (GameRoleTeam)request.Team;
@@ -200,6 +284,34 @@ public class GameService : IGameService
             .Include(s => s.ScenarioRoles)
             .FirstOrDefaultAsync(s => s.Id == scenarioId && s.GameId == gameId, ct)
             ?? throw new KeyNotFoundException("Scenario not found.");
+
+        // Validate incoming roles: they must exist and be either global (GameId == NULL)
+        // or belong to the same game.
+        var roleIds = request.Roles
+            .Select(r => r.GameRoleId)
+            .Distinct()
+            .ToList();
+
+        if (roleIds.Count > 0)
+        {
+            var roles = await _db.GameRoles
+                .Where(r => roleIds.Contains(r.Id))
+                .Select(r => new { r.Id, r.GameId })
+                .ToListAsync(ct);
+
+            var foundIds = roles.Select(r => r.Id).ToHashSet();
+            var missing = roleIds.Where(id => !foundIds.Contains(id)).ToList();
+            if (missing.Count > 0)
+                throw new KeyNotFoundException("One or more roles were not found.");
+
+            var invalid = roles
+                .Where(r => r.GameId != null && r.GameId != gameId)
+                .Select(r => r.Id)
+                .ToList();
+
+            if (invalid.Count > 0)
+                throw new InvalidOperationException("One or more roles do not belong to this game.");
+        }
 
         // پاک‌کردن نقش‌های قبلی سناریو
         _db.ScenarioRoles.RemoveRange(scenario.ScenarioRoles);

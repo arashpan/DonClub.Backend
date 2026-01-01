@@ -6,7 +6,8 @@ public static class AppRoles
     public const string Admin = "Admin";
     public const string Manager = "Manager";
     public const string Player = "Player";
+    public const string Operator = "Operator";
 
     public const string SuperUserOrAdmin = SuperUser + "," + Admin;
-    public const string ManagerOrAbove = SuperUser + "," + Admin + "," + Manager;
+    public const string ManagerOrAbove = SuperUser + "," + Admin + "," + Manager + "," + Operator;
 }
