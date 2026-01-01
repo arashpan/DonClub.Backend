@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using Donclub.Domain.Users;
+using Donclub.Application.Games;
 
 
 namespace Donclub.Api.Controllers;
@@ -85,5 +86,14 @@ public class UsersController : ControllerBase
 
         return Ok(user);
     }
+
+	// GET /api/users/{id}/games
+	[HttpGet("{id:long}/games")]
+	public async Task<ActionResult<IReadOnlyList<GameSummaryDto>>> GetUserGames(long id, CancellationToken ct)
+	{
+		var games = await _users.GetUserGamesAsync(id, ct);
+		return Ok(games);
+	}
+
 
 }

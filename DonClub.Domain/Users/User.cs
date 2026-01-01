@@ -28,8 +28,9 @@ public class User : BaseEntity<long>, IAuditableEntity, ISoftDeletable
     public DateTime? UpdatedAtUtc { get; set; }
     public bool IsDeleted { get; set; }
     public DateTime? DeletedAtUtc { get; set; }
+	public string UserCode { get; set; } = default!; // کد 6 رقمی یکتا
 
-    public ICollection<UserRole> UserRoles { get; set; } = new List<UserRole>();
+	public ICollection<UserRole> UserRoles { get; set; } = new List<UserRole>();
 }
 
 public class Role : BaseEntity<int>

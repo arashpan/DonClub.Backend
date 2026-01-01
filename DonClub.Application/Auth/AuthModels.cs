@@ -11,7 +11,8 @@ public record UserDto(
     long Id,
     string PhoneNumber,
     string? DisplayName,
-    string[] Roles
+    string[] Roles,
+	string UserCode
 );
 
 public record AuthResultDto(

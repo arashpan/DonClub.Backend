@@ -2,6 +2,7 @@
 using Donclub.Domain.Users;
 using Donclub.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
+using Donclub.Application.Games;
 
 namespace Donclub.Infrastructure.Users;
 
@@ -87,7 +88,12 @@ public class UserService : IUserService
             existing.IsActive = true;
             existing.UpdatedAtUtc = DateTime.UtcNow;
 
-            await SetRolesInternal(existing, request.Roles, ct);
+			if (string.IsNullOrWhiteSpace(existing.UserCode))
+			{
+				existing.UserCode = await UserCodeGenerator.GenerateUniqueAsync(_db, ct);
+			}
+
+			await SetRolesInternal(existing, request.Roles, ct);
             await _db.SaveChangesAsync(ct);
             return existing.Id;
         }
@@ -100,12 +106,26 @@ public class UserService : IUserService
             Email = request.Email,
             MembershipLevel = request.MembershipLevel,
             IsActive = true,
-            PhoneNumberConfirmed = false, // تا وقتی با OTP وارد نشه
+			UserCode = await UserCodeGenerator.GenerateUniqueAsync(_db, ct),
+			PhoneNumberConfirmed = false, // تا وقتی با OTP وارد نشه
             CreatedAtUtc = DateTime.UtcNow
         };
 
-        _db.Users.Add(user);
-        await _db.SaveChangesAsync(ct);
+		_db.Users.Add(user);
+
+		for (var attempt = 0; attempt < 10; attempt++)
+		{
+			try
+			{
+				await _db.SaveChangesAsync(ct);
+				break;
+			}
+			catch (DbUpdateException ex) when (UserCodeGenerator.IsUserCodeUniqueViolation(ex) && attempt < 9)
+			{
+				user.UserCode = await UserCodeGenerator.GenerateUniqueAsync(_db, ct);
+			}
+		}
+		await _db.SaveChangesAsync(ct);
 
         await SetRolesInternal(user, request.Roles, ct);
         await _db.SaveChangesAsync(ct);
@@ -195,4 +215,25 @@ public class UserService : IUserService
             phone = "98" + phone;
         return phone;
     }
+
+	public async Task<IReadOnlyList<GameSummaryDto>> GetUserGamesAsync(long userId, CancellationToken ct = default)
+	{
+		var userExists = await _db.Users.AnyAsync(u => u.Id == userId, ct);
+		if (!userExists)
+			throw new KeyNotFoundException("User not found.");
+
+		var games = await (
+			from sp in _db.SessionPlayers
+			join s in _db.Sessions on sp.SessionId equals s.Id
+			join g in _db.Games on s.GameId equals g.Id
+			where sp.PlayerId == userId
+			select new GameSummaryDto(g.Id, g.Name, g.IsActive)
+		)
+		.Distinct()
+		.OrderBy(x => x.Name)
+		.ToListAsync(ct);
+
+		return games;
+	}
+
 }

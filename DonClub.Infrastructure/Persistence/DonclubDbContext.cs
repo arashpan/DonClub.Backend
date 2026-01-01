@@ -239,9 +239,12 @@ public class DonclubDbContext : DbContext
             e.HasKey(x => x.Id);
             e.HasIndex(x => x.UserName).IsUnique();
             e.HasIndex(x => x.PhoneNumber).IsUnique();
-            e.Property(x => x.MembershipLevel).HasConversion<byte>();
+			e.Property(x => x.UserCode).IsRequired().HasMaxLength(6);
+			e.HasIndex(x => x.UserCode).IsUnique();
+			e.Property(x => x.MembershipLevel).HasConversion<byte>();
             e.HasQueryFilter(x => !x.IsDeleted);
-        });
+
+		});
 
         // Role
         b.Entity<Role>(e =>

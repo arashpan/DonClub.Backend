@@ -1,6 +1,8 @@
-﻿using System.Collections.Generic;
+﻿using Donclub.Application.Games;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+
 
 namespace Donclub.Application.Users;
 
@@ -14,4 +16,7 @@ public interface IUserService
 
     Task UpdateRolesAsync(long id, UpdateUserRolesRequest request, CancellationToken ct = default);
     Task SetActiveAsync(long id, bool isActive, CancellationToken ct = default);
+
+	Task<IReadOnlyList<GameSummaryDto>> GetUserGamesAsync(long userId, CancellationToken ct = default);
+
 }
