@@ -95,5 +95,12 @@ public class UsersController : ControllerBase
 		return Ok(games);
 	}
 
+	// GET /api/users/{id}/managed-games
+	[HttpGet("{id:long}/managed-games")]
+	public async Task<ActionResult<IReadOnlyList<GameSummaryDto>>> GetManagedGames(long id, CancellationToken ct)
+	{
+		var games = await _users.GetManagedGamesAsync(id, ct);
+		return Ok(games);
+	}
 
 }

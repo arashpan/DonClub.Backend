@@ -18,5 +18,6 @@ public interface IUserService
     Task SetActiveAsync(long id, bool isActive, CancellationToken ct = default);
 
 	Task<IReadOnlyList<GameSummaryDto>> GetUserGamesAsync(long userId, CancellationToken ct = default);
+	Task<IReadOnlyList<GameSummaryDto>> GetManagedGamesAsync(long userId, CancellationToken ct = default);
 
 }

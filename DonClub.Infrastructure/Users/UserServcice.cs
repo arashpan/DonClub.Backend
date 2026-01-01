@@ -236,4 +236,24 @@ public class UserService : IUserService
 		return games;
 	}
 
+	public async Task<IReadOnlyList<GameSummaryDto>> GetManagedGamesAsync(long userId, CancellationToken ct = default)
+	{
+		var userExists = await _db.Users.AnyAsync(u => u.Id == userId, ct);
+		if (!userExists)
+			throw new KeyNotFoundException("User not found.");
+
+		var games = await _db.Sessions
+			.Where(s => s.ManagerId == userId)
+			.Select(s => new GameSummaryDto(
+				s.GameId,
+				s.Game.Name,
+				s.Game.IsActive
+			))
+			.Distinct()
+			.OrderBy(x => x.Name)
+			.ToListAsync(ct);
+
+		return games;
+	}
+
 }
