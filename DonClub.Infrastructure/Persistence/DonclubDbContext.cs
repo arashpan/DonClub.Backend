@@ -18,6 +18,7 @@ public class DonclubDbContext : DbContext
 {
     public DonclubDbContext(DbContextOptions<DonclubDbContext> options) : base(options) { }
     public DbSet<SystemSetting> SystemSettings => Set<SystemSetting>();
+    public DbSet<SmsProviderSetting> SmsProviderSettings => Set<SmsProviderSetting>();
     public DbSet<Notification> Notifications => Set<Notification>();
 
     public DbSet<User> Users => Set<User>();
@@ -239,12 +240,12 @@ public class DonclubDbContext : DbContext
             e.HasKey(x => x.Id);
             e.HasIndex(x => x.UserName).IsUnique();
             e.HasIndex(x => x.PhoneNumber).IsUnique();
-			e.Property(x => x.UserCode).IsRequired().HasMaxLength(6);
-			e.HasIndex(x => x.UserCode).IsUnique();
-			e.Property(x => x.MembershipLevel).HasConversion<byte>();
+            e.Property(x => x.UserCode).IsRequired().HasMaxLength(6);
+            e.HasIndex(x => x.UserCode).IsUnique();
+            e.Property(x => x.MembershipLevel).HasConversion<byte>();
             e.HasQueryFilter(x => !x.IsDeleted);
 
-		});
+        });
 
         // Role
         b.Entity<Role>(e =>
@@ -447,6 +448,42 @@ public class DonclubDbContext : DbContext
             e.HasIndex(x => x.Key).IsUnique();
         });
 
+        // SmsProviderSettings
+        b.Entity<SmsProviderSetting>(e =>
+        {
+            e.ToTable("SmsProviderSettings", "app");
+            e.HasKey(x => x.Id);
+
+            e.Property(x => x.Provider).IsRequired().HasMaxLength(50);
+            e.Property(x => x.ApiBaseUrl).IsRequired().HasMaxLength(300);
+            e.Property(x => x.Username).IsRequired().HasMaxLength(200);
+            e.Property(x => x.Password).IsRequired().HasMaxLength(200);
+            e.Property(x => x.FromNumber).HasMaxLength(50);
+            e.Property(x => x.Description).HasMaxLength(500);
+
+            // فقط یک رکورد می‌تواند IsActive = 1 باشد
+            e.HasIndex(x => x.IsActive)
+                .IsUnique()
+                .HasFilter("[IsActive] = 1");
+
+            // Seed اولیه (بعداً خودتان از طریق API یا SQL آپدیت می‌کنید)
+            e.HasData(new SmsProviderSetting
+            {
+                Id = 1,
+                Provider = "Melipayamak",
+                ApiBaseUrl = "https://rest.payamak-panel.com/api/SendSMS/",
+                Username = "9991372121",
+                Password = "1c4c0ea3-06be-4380-b3bd-25d3340eed8f",
+                FromNumber = "50002710037487",
+                UseBaseServiceNumber = false,
+                BodyId = null,
+                IsFlash = false,
+                IsEnabled = true,
+                IsActive = true,
+                Description = "Seed اولیه تنظیمات پیامک‌رسان (ملی پیامک) - لطفاً مقادیر را تغییر دهید.",
+                CreatedAtUtc = new DateTime(2026, 1, 6, 0, 0, 0, DateTimeKind.Utc)
+            });
+        });
 
         // Seed roles پایه
         b.Entity<Role>().HasData(

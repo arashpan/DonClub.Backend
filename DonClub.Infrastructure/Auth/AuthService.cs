@@ -73,9 +73,10 @@ public class AuthService : IAuthService
         _db.SmsOtps.Add(entity);
         await _db.SaveChangesAsync(ct);
 
+
         await _sms.SendAsync(phoneNumber, $"کد ورود شما به دان‌کلاب: {code}", ct);
 
-        return new RequestOtpResultDto(phoneNumber, expires, code.ToString());
+        return new RequestOtpResultDto(phoneNumber, expires, "");
     }
 
     public async Task<AuthResultDto> VerifyOtpAsync(string phoneNumber, string code, CancellationToken ct = default)
