@@ -472,16 +472,16 @@ public class DonclubDbContext : DbContext
                 Id = 1,
                 Provider = "Melipayamak",
                 ApiBaseUrl = "https://rest.payamak-panel.com/api/SendSMS/",
-                Username = "9991372121",
-                Password = "1c4c0ea3-06be-4380-b3bd-25d3340eed8f",
-                FromNumber = "50002710037487",
+                Username = "UserName",
+                Password = "Password",
+                FromNumber = "FromNumber",
                 UseBaseServiceNumber = false,
                 BodyId = null,
                 IsFlash = false,
                 IsEnabled = true,
                 IsActive = true,
                 Description = "Seed اولیه تنظیمات پیامک‌رسان (ملی پیامک) - لطفاً مقادیر را تغییر دهید.",
-                CreatedAtUtc = new DateTime(2026, 1, 6, 0, 0, 0, DateTimeKind.Utc)
+                CreatedAtUtc = new DateTime()
             });
         });
 

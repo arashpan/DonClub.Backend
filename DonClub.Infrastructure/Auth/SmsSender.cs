@@ -1,5 +1,4 @@
-﻿using System.Net.Http;
-using Donclub.Application.Auth;
+﻿using Donclub.Application.Auth;
 using Donclub.Domain.Settings;
 using Donclub.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -94,7 +93,7 @@ public class SmsSender : ISmsSender
         var body = await resp.Content.ReadAsStringAsync(ct);
 
         if (!resp.IsSuccessStatusCode)
-        {z
+        {
             _logger.LogError("ارسال پیامک ناموفق. Status={Status} Body={Body}", (int)resp.StatusCode, body);
             throw new InvalidOperationException("ارسال پیامک ناموفق بود.");
         }

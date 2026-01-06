@@ -1,12 +1,13 @@
 ﻿using Donclub.Application.Auth;
 using Donclub.Application.Settings;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Donclub.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-//[Authorize(Roles = "SuperUser,Admin")]
+[Authorize(Roles = "SuperUser,Admin")]
 public class SmsProviderSettingsController : ControllerBase
 {
     private readonly ISmsProviderSettingsService _service;
